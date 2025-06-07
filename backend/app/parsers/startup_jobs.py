@@ -25,8 +25,8 @@ async def process_job_div_throttled(job_div):
         return await process_job_div(job_div)
 
 
-def find_apply_link(ы: BeautifulSoup):
-    for a in ы.find_all("a"):
+def find_apply_link(s: BeautifulSoup):
+    for a in s.find_all("a"):
         if "Apply for this job" in a.get_text(strip=True):
             return f"{base_url}/{a["href"].lstrip("/")}"
     return None
