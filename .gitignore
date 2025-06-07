@@ -1,0 +1,55 @@
+# --- Python ---
+__pycache__/
+*.py[cod]   
+*.db
+*.egg-info/
+.env
+.env.*
+
+
+# --- Conda / Venv / Pipenv ---
+.venv/
+venv/
+env/
+*.env
+*.shenv
+*.DS_Store
+
+# --- FastAPI Cache ---
+*.log
+*.coverage
+htmlcov/
+.cache/
+coverage.xml
+dist/
+build/
+.mypy_cache/
+.pytest_cache/
+.vscode/
+.idea/
+
+# --- SQLite / Alembic / Migrations ---
+alembic.ini
+migrations/
+
+# --- Node / Frontend ---
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.next/
+frontend/.env
+
+# --- Docker ---
+**/docker-compose.override.yml
+**/.docker/
+**/.container/
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+
+# --- Misc ---
+*.swp
+
+# --- Postgres Data Volume ---
+pg_data/
