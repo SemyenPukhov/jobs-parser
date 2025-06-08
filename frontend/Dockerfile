@@ -9,6 +9,7 @@ ENV NODE_ENV=production
 
 COPY package*.json ./
 RUN npm install --force
+RUN npm install -g typescript
 COPY . .
 RUN npm run build
 
