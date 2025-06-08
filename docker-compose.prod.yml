@@ -48,24 +48,20 @@ services:
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./frontend/Dockerfile
       args:
         VITE_API_URL: "http://${SSH_HOST}"
     restart: always
     environment:
       VITE_API_URL: "http://${SSH_HOST}"
-    volumes:
-      - frontend_dist:/app/dist
     networks:
       - app-network
 
   nginx:
-    build:
-      context: .
-      dockerfile: ./nginx/Dockerfile
+    image: nginx:alpine
     volumes:
-      - frontend_dist:/usr/share/nginx/html
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
     ports:
       - "80:80"
       - "443:443"
@@ -81,4 +77,3 @@ networks:
 
 volumes:
   pg_data:
-  frontend_dist:
