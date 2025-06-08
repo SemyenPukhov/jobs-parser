@@ -51,9 +51,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: http://${SSH_HOST}/api
+        VITE_API_URL: http://${SSH_HOST}
     environment:
-      - VITE_API_URL=http://${SSH_HOST}/api
+      - VITE_API_URL=http://${SSH_HOST}
     networks:
       - app-network
 
