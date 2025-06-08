@@ -63,6 +63,8 @@ services:
       - .env
     environment:
       - VITE_API_URL=http://${SSH_HOST}
+    volumes:
+      - frontend_dist:/app/dist
     networks:
       - app-network
 
@@ -70,7 +72,8 @@ services:
     build:
       context: .
       dockerfile: ./nginx/Dockerfile
-    volumes: []
+    volumes:
+      - frontend_dist:/usr/share/nginx/html
     ports:
       - "80:80"
       - "443:443"
@@ -86,3 +89,4 @@ networks:
 
 volumes:
   pg_data:
+  frontend_dist:

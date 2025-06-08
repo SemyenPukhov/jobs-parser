@@ -35,13 +35,6 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose version
 
-      - name: Create .env file
-        run: |
-          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-          echo "SSH_HOST=${{ secrets.SSH_HOST }}" >> .env
-
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -51,17 +44,16 @@ jobs:
           script: |
             set -e
             cd /home/deploy/app
-            git config --global --add safe.directory /home/deploy/app
 
-            echo "📦 Обработка .env..."
-            if [ ! -s .env ]; then
-              echo "DB_USER=${{ secrets.DB_USER }}" > .env
-              echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-              echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-              echo "SSH_HOST=${{ secrets.SSH_HOST }}" >> .env
-              chown deploy:deploy .env
-              chmod 600 .env
-            fi
+            echo "📦 Настройка .env..."
+            cat > .env << EOL
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            SSH_HOST=${{ secrets.SSH_HOST }}
+            EOL
+            chown deploy:deploy .env
+            chmod 600 .env
 
             echo "🔄 Синхронизация репозитория..."
             if [ ! -d .git ]; then
@@ -85,6 +77,7 @@ jobs:
             fi
 
             echo "🚀 Запуск docker-compose..."
+            docker-compose -f docker-compose.prod.yml down
             docker-compose -f docker-compose.prod.yml up -d --build --force-recreate --always-recreate-deps
 
             echo "🧹 Очистка неиспользуемых ресурсов..."
