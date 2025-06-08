@@ -50,7 +50,10 @@ jobs:
           script: |
             cd /home/deploy/app
             if [ ! -d .git ]; then
+              if [ -f .env ]; then mv .env /tmp/.env_bak; fi
+              rm -rf ./*
               git clone https://github.com/${{ github.repository }} .
+              if [ -f /tmp/.env_bak ]; then mv /tmp/.env_bak .env; fi
             else
               git pull origin ${{ github.event.inputs.branch }}
             fi
