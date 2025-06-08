@@ -4,7 +4,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY ../frontend ./
 
-RUN npm ci
+RUN npm install --force
 RUN npm run build
 
 ### Stage 2: Serve with nginx
