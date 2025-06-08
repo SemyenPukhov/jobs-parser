@@ -52,6 +52,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: "http://${SSH_HOST:-localhost}"
+    restart: always
     environment:
       - VITE_API_URL=http://${SSH_HOST:-localhost}
     networks:
