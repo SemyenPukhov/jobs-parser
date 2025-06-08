@@ -5,16 +5,18 @@ WORKDIR /app
 
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
-ENV NODE_ENV=production
 
+# Install dependencies
 COPY package*.json ./
-RUN npm install --force --include=dev
+RUN npm install --force
 RUN npm install -g typescript
-RUN npm install --save-dev postcss autoprefixer tailwindcss
+RUN npm install postcss@latest autoprefixer@latest tailwindcss@latest
+
+# Build the application
 COPY . .
 RUN npm run build
 
-# Stage 2: Serve the application with Nginx
+# Stage 2: Production image
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
