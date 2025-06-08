@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: deploy-jobs-parser
     steps:
-    steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
