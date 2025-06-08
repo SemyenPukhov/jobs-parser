@@ -86,15 +86,17 @@ jobs:
             # Создаем директорию для frontend если её нет
             mkdir -p frontend/dist
             chmod 755 frontend/dist
-            
-            # Сначала собираем frontend
+
+            # Собираем frontend
             echo "🏗️ Сборка frontend..."
-            docker-compose --env-file .env -f docker-compose.prod.yml build frontend
-            docker-compose --env-file .env -f docker-compose.prod.yml run --rm frontend npm run build
+            cd frontend
+            npm install --force
+            VITE_API_URL="http://${{ secrets.SSH_HOST }}" npm run build
+            cd ..
             
-            # Запускаем все сервисы
+            # Запускаем сервисы
             echo "🚀 Запуск сервисов..."
-            docker-compose --env-file .env -f docker-compose.prod.yml up -d --force-recreate --always-recreate-deps
+            docker-compose --env-file .env -f docker-compose.prod.yml up -d --build --force-recreate --always-recreate-deps
 
             echo "🧹 Очистка неиспользуемых ресурсов..."
             docker system prune -f
