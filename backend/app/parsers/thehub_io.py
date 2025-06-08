@@ -143,9 +143,9 @@ async def scrape_thehub_jobs(session: Session):
                 )
                 session.add(job)
                 all_jobs.append(job)
-                logger.info(f"✅ Сохранено: {job_info["title"]}")
+                logger.info(f"✅ Сохранено: {job_info['title']}")
             else:
-                logger.info(f"⚠️ Пропущено (дубликат): {existing["title"]}")
+                logger.info(f"⚠️ Пропущено (дубликат): {existing['title']}")
 
         session.commit()
         await browser.close()
