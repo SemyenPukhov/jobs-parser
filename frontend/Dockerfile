@@ -10,7 +10,7 @@ ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm install --force
 RUN npm install -g typescript
-RUN npm install --save-dev @vitejs/plugin-react
+RUN npm install --force --save-dev @vitejs/plugin-react
 COPY . .
 RUN npm run build
 
