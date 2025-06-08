@@ -112,7 +112,7 @@ async def scrape_startup_jobs(session: Session):
                 select(Job).where(Job.url == job.url)).first()
 
             if not existing:
-                logger.info(f"📊 Сохраняю в БД {job["url"]}")
+                logger.info(f"📊 Сохраняю в БД {job.url}")
                 session.add(job)
                 all_jobs.append(job)
             else:

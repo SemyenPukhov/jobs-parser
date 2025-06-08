@@ -5,7 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 from app.db import engine
-from app.models import Job
+from app.models import Job, JobProcessingStatus
 from sqlmodel import SQLModel
 
 
