@@ -60,7 +60,6 @@ function App() {
     if (!title || !id) {
       return;
     }
-    const action = title.action;
 
     acceptOrRejectJob({ id, action: title.action as AllowedActions, comment });
     setTitle(null);
