@@ -23,18 +23,11 @@ RUN echo "VITE_API_URL=$VITE_API_URL" > .env
 # Build the application
 RUN npm run build
 
-# Production stage
+# Production stage - just copy the built files
 FROM nginx:alpine
 
 # Copy built assets from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Add script to inject environment variables
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
-
 # Expose port
-EXPOSE 80
-
-# Start nginx with environment variable injection
-CMD ["/docker-entrypoint.sh"] 
+EXPOSE 80 

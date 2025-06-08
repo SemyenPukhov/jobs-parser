@@ -52,16 +52,13 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: http://${SSH_HOST}/api
-    restart: always
-    depends_on:
-      - backend
-    environment:
-      - VITE_API_URL=http://${SSH_HOST}/api
     networks:
       - app-network
 
   nginx:
-    image: nginx:alpine
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
     restart: always
     ports:
       - "80:80"
@@ -69,6 +66,7 @@ services:
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
       - ./nginx/ssl:/etc/nginx/ssl
+      - frontend:/usr/share/nginx/html
     depends_on:
       - frontend
       - backend
@@ -80,4 +78,5 @@ networks:
     driver: bridge
 
 volumes:
-  pg_data: 
+  pg_data:
+  frontend: 
