@@ -42,11 +42,11 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            set -e  # Exit on first error
+            set -e
             cd /home/deploy/app
             git config --global --add safe.directory /home/deploy/app
 
-            echo "🧪 Проверка .env..."
+            echo "📦 Обработка .env..."
             if [ ! -s .env ]; then
               echo "DB_USER=${{ secrets.DB_USER }}" > .env
               echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
@@ -56,26 +56,31 @@ jobs:
               chmod 600 .env
             fi
 
-            echo "📦 Обновление исходного кода..."
+            echo "🔄 Синхронизация репозитория..."
             if [ ! -d .git ]; then
-              [ -f .env ] && cp .env /tmp/.env_bak
-              rm -rf ./*
-              git clone https://github.com/${{ github.repository }} .
-              [ -f /tmp/.env_bak ] && mv /tmp/.env_bak .env
+              git init
+              git remote add origin https://github.com/${{ github.repository }}
+              git fetch origin ${{ github.event.inputs.branch }}
+              git checkout -t origin/${{ github.event.inputs.branch }}
             else
-              [ -f .env ] && cp .env /tmp/.env_bak
               git fetch origin ${{ github.event.inputs.branch }}
               git reset --hard origin/${{ github.event.inputs.branch }}
               git clean -fdx
-              [ -f /tmp/.env_bak ] && mv /tmp/.env_bak .env
             fi
 
-            echo "🐳 Запуск docker-compose..."
+            echo "🔍 Коммит после синхронизации:"
+            git rev-parse HEAD
+
+            echo "🧪 Проверка docker-compose.prod.yml..."
             if [ ! -f docker-compose.prod.yml ]; then
-              echo "Файл docker-compose.prod.yml не найден!" >&2
+              echo "❌ docker-compose.prod.yml не найден!"
               exit 1
             fi
 
+            echo "🚀 Запуск docker-compose..."
             docker-compose -f docker-compose.prod.yml up -d --build --force-recreate --always-recreate-deps
+
+            echo "🧹 Очистка неиспользуемых ресурсов..."
             docker system prune -f
-            echo "✅ Деплой завершён"
+
+            echo "✅ Деплой завершён успешно"

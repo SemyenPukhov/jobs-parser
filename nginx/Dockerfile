@@ -1,10 +1,13 @@
 FROM nginx:alpine
 
-# Copy nginx configuration
+# Копируем Nginx конфиг
 COPY conf.d/default.conf /etc/nginx/conf.d/default.conf
 
-# Expose ports
+# Копируем собранный фронтенд из build-контекста
+COPY ../frontend/dist /usr/share/nginx/html
+
+# Открываем порты
 EXPOSE 80 443
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"] 
+# Запускаем nginx
+CMD ["nginx", "-g", "daemon off;"]

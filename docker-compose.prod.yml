@@ -55,8 +55,6 @@ services:
     restart: always
     environment:
       - VITE_API_URL=http://${SSH_HOST}
-    volumes:
-      - frontend:/usr/share/nginx/html
     networks:
       - app-network
 
@@ -71,9 +69,6 @@ services:
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
       - ./nginx/ssl:/etc/nginx/ssl
-      - frontend:/usr/share/nginx/html
-    environment:
-      - SSH_HOST=${SSH_HOST}
     depends_on:
       - frontend
       - backend
@@ -86,4 +81,3 @@ networks:
 
 volumes:
   pg_data:
-  frontend: 
