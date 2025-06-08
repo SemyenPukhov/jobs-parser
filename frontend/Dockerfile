@@ -10,6 +10,7 @@ ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm install --force --include=dev
 RUN npm install -g typescript
+RUN npm install -g postcss autoprefixer
 COPY . .
 RUN npm run build
 
