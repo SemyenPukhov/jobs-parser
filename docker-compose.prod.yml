@@ -29,6 +29,17 @@ services:
     networks:
       - app-network
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://${SSH_HOST}
+    volumes:
+      - ./frontend/dist:/app/dist
+    networks:
+      - app-network
+
   backend:
     build:
       context: ./backend
@@ -56,6 +67,7 @@ services:
       - "80:80"
     depends_on:
       - backend
+      - frontend
     networks:
       - app-network
 
