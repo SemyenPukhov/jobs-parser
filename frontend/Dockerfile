@@ -10,7 +10,7 @@ ENV VITE_API_URL=$VITE_API_URL
 COPY package*.json ./
 RUN npm install --force
 RUN npm install -g typescript
-RUN npm install postcss@latest autoprefixer@latest tailwindcss@latest
+RUN npm install --legacy-peer-deps postcss@latest autoprefixer@latest tailwindcss@latest
 
 # Build the application
 COPY . .
