@@ -16,7 +16,7 @@ browser_semaphore = asyncio.Semaphore(MAX_PAGES)
 async def fetch_html_browser(url: str) -> str:
     async with async_playwright() as p:
         logger.info(f"📊 Запрашиваю HTML: {url}")
-        browser = await p.chromium.launch(headless=False)
+        browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
 
         try:
