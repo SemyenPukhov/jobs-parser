@@ -58,12 +58,6 @@ jobs:
             SSH_HOST=${{ secrets.SSH_HOST }}
             EOL
 
-            # Сборка frontend
-            cd frontend
-            npm install
-            VITE_API_URL="http://${{ secrets.SSH_HOST }}" npm run build
-            cd ..
-
             # Запуск сервисов
             docker-compose -f docker-compose.prod.yml down
             docker-compose -f docker-compose.prod.yml up -d --build
