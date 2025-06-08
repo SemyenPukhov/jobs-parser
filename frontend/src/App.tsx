@@ -123,7 +123,7 @@ function App() {
                             {j.description
                               .split("\n")
                               .filter(Boolean)
-                              .map((text, i) => (
+                              .map((text: any, i: any) => (
                                 <p key={i}>{text}</p>
                               ))}
                           </AccordionContent>
