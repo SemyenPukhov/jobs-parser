@@ -45,67 +45,27 @@ jobs:
             set -e
             cd /home/deploy/app
 
-            echo "🔄 Синхронизация репозитория..."
-            if [ ! -d .git ]; then
-              git init
-              git remote add origin https://github.com/${{ github.repository }}
-              git fetch origin ${{ github.event.inputs.branch }}
-              git checkout -t origin/${{ github.event.inputs.branch }}
-            else
-              git fetch origin ${{ github.event.inputs.branch }}
-              git reset --hard origin/${{ github.event.inputs.branch }}
-              git clean -fdx
-            fi
+            # Синхронизация репозитория
+            git fetch origin ${{ github.event.inputs.branch }}
+            git reset --hard origin/${{ github.event.inputs.branch }}
+            git clean -fdx
 
-            echo "🔍 Коммит после синхронизации:"
-            git rev-parse HEAD
-
-            echo "📦 Настройка .env..."
+            # Настройка .env
             cat > .env << EOL
             DB_USER=${{ secrets.DB_USER }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             DB_NAME=${{ secrets.DB_NAME }}
             SSH_HOST=${{ secrets.SSH_HOST }}
             EOL
-            chown deploy:deploy .env
-            chmod 600 .env
 
-            echo "🧪 Проверка docker-compose.prod.yml..."
-            if [ ! -f docker-compose.prod.yml ]; then
-              echo "❌ docker-compose.prod.yml не найден!"
-              exit 1
-            fi
-
-            echo "🚀 Запуск docker-compose..."
-            # Остановка и удаление старых контейнеров
-            docker-compose -f docker-compose.prod.yml down --remove-orphans
-            
-            # Очистка неиспользуемых volumes
-            docker volume prune -f
-            
-            # Создаем директорию для frontend если её нет
-            mkdir -p frontend/dist
-            chmod 755 frontend/dist
-
-            # Устанавливаем Node.js
-            echo "📦 Установка Node.js..."
-            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-            node --version
-            npm --version
-
-            # Собираем frontend
-            echo "🏗️ Сборка frontend..."
+            # Сборка frontend
             cd frontend
-            npm install --force
+            npm install
             VITE_API_URL="http://${{ secrets.SSH_HOST }}" npm run build
             cd ..
-            
-            # Запускаем сервисы
-            echo "🚀 Запуск сервисов..."
-            docker-compose --env-file .env -f docker-compose.prod.yml up -d --build --force-recreate --always-recreate-deps
 
-            echo "🧹 Очистка неиспользуемых ресурсов..."
-            docker system prune -f
+            # Запуск сервисов
+            docker-compose -f docker-compose.prod.yml down
+            docker-compose -f docker-compose.prod.yml up -d --build
 
-            echo "✅ Деплой завершён успешно"
+            echo "✅ Деплой завершён"

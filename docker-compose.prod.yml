@@ -35,8 +35,8 @@ services:
       dockerfile: Dockerfile
     restart: always
     depends_on:
-      - db
-      - migrate
+      migrate:
+        condition: service_completed_successfully
     environment:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -47,15 +47,13 @@ services:
       - app-network
 
   nginx:
-    build:
-      context: .
-      dockerfile: ./nginx/Dockerfile
+    image: nginx:alpine
+    restart: always
     volumes:
-      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
-      - ./frontend/dist:/usr/share/nginx/html
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
     ports:
       - "80:80"
-      - "443:443"
     depends_on:
       - backend
     networks:
