@@ -55,6 +55,8 @@ services:
     restart: always
     environment:
       - VITE_API_URL=http://${SSH_HOST:-localhost}
+    volumes:
+      - frontend:/usr/share/nginx/html
     networks:
       - app-network
 
