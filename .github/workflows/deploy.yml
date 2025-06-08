@@ -49,13 +49,15 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/deploy/app
+            git config --global --add safe.directory /home/deploy/app
+
             if [ ! -d .git ]; then
               if [ -f .env ]; then mv .env /tmp/.env_bak; fi
               rm -rf ./*
               git clone https://github.com/${{ github.repository }} .
               if [ -f /tmp/.env_bak ]; then mv /tmp/.env_bak .env; fi
             else
-              git fetch origin
+              git fetch origin ${{ github.event.inputs.branch }}
               git reset --hard origin/${{ github.event.inputs.branch }}
               git clean -fdx
             fi
