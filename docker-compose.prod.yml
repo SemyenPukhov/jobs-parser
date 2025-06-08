@@ -12,13 +12,18 @@ services:
       - pg_data:/var/lib/postgresql/data
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
 
   migrate:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: sh -c "pwd && ls -la && alembic upgrade head"
-    working_dir: /app           # 👈 это главное!
+    command: alembic upgrade head
+    working_dir: /app
     environment:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -26,7 +31,8 @@ services:
       DB_HOST: db
       DB_PORT: 5432
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - app-network
 
