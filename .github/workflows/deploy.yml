@@ -77,7 +77,10 @@ jobs:
             fi
 
             echo "🚀 Запуск docker-compose..."
-            docker-compose -f docker-compose.prod.yml down
+            docker-compose -f docker-compose.prod.yml down --remove-orphans
+            
+            docker volume prune -f
+            
             docker-compose -f docker-compose.prod.yml up -d --build --force-recreate --always-recreate-deps
 
             echo "🧹 Очистка неиспользуемых ресурсов..."

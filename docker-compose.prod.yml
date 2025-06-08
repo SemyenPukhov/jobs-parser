@@ -4,8 +4,6 @@ services:
   db:
     image: postgres:15
     restart: always
-    env_file:
-      - .env
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -20,14 +18,12 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     command: alembic upgrade head
-    env_file:
-      - .env
     environment:
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - DB_HOST=db
-      - DB_PORT=5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_HOST: db
+      DB_PORT: 5432
     depends_on:
       - db
     networks:
@@ -38,17 +34,15 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: always
-    env_file:
-      - .env
     depends_on:
       - db
       - migrate
     environment:
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - DB_HOST=db
-      - DB_PORT=5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_HOST: db
+      DB_PORT: 5432
     networks:
       - app-network
 
@@ -59,10 +53,8 @@ services:
       args:
         VITE_API_URL: "http://${SSH_HOST}"
     restart: always
-    env_file:
-      - .env
     environment:
-      - VITE_API_URL=http://${SSH_HOST}
+      VITE_API_URL: "http://${SSH_HOST}"
     volumes:
       - frontend_dist:/app/dist
     networks:
