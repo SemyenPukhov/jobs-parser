@@ -14,6 +14,9 @@ RUN npm install --force
 # Copy the rest of the application
 COPY . .
 
+# Debug VITE_API_URL before build
+RUN echo "VITE_API_URL in Dockerfile build: $VITE_API_URL"
+
 # Build the application, ensuring VITE_API_URL is passed
 RUN VITE_API_URL=${VITE_API_URL} npm run build
 
