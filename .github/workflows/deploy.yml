@@ -45,16 +45,6 @@ jobs:
             set -e
             cd /home/deploy/app
 
-            echo "📦 Настройка .env..."
-            cat > .env << EOL
-            DB_USER=${{ secrets.DB_USER }}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            DB_NAME=${{ secrets.DB_NAME }}
-            SSH_HOST=${{ secrets.SSH_HOST }}
-            EOL
-            chown deploy:deploy .env
-            chmod 600 .env
-
             echo "🔄 Синхронизация репозитория..."
             if [ ! -d .git ]; then
               git init
@@ -69,6 +59,16 @@ jobs:
 
             echo "🔍 Коммит после синхронизации:"
             git rev-parse HEAD
+
+            echo "📦 Настройка .env..."
+            cat > .env << EOL
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            SSH_HOST=${{ secrets.SSH_HOST }}
+            EOL
+            chown deploy:deploy .env
+            chmod 600 .env
 
             echo "🧪 Проверка docker-compose.prod.yml..."
             if [ ! -f docker-compose.prod.yml ]; then
