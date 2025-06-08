@@ -84,3 +84,4 @@ networks:
 
 volumes:
   pg_data:
+  frontend/dist:
