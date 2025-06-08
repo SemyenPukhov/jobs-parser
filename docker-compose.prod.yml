@@ -52,6 +52,8 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: http://${SSH_HOST}/api
+    environment:
+      - VITE_API_URL=http://${SSH_HOST}/api
     networks:
       - app-network
 

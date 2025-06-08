@@ -55,6 +55,7 @@ jobs:
               echo "DB_USER=${{ secrets.DB_USER}}" > .env
               echo "DB_PASSWORD=${{ secrets.DB_PASSWORD}}" >> .env
               echo "DB_NAME=${{ secrets.DB_NAME}}" >> .env
+              echo "SSH_HOST=${{ secrets.SSH_HOST}}" >> .env
               chown deploy:deploy .env
               chmod 600 .env
             fi
