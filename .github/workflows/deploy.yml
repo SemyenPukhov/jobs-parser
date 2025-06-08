@@ -77,13 +77,24 @@ jobs:
             fi
 
             echo "🚀 Запуск docker-compose..."
+            # Остановка и удаление старых контейнеров
             docker-compose -f docker-compose.prod.yml down --remove-orphans
             
+            # Очистка неиспользуемых volumes
             docker volume prune -f
             
+            # Создаем директорию для frontend если её нет
             mkdir -p frontend/dist
+            chmod 755 frontend/dist
             
-            docker-compose --env-file .env -f docker-compose.prod.yml up -d --build --force-recreate --always-recreate-deps
+            # Сначала собираем frontend
+            echo "🏗️ Сборка frontend..."
+            docker-compose --env-file .env -f docker-compose.prod.yml build frontend
+            docker-compose --env-file .env -f docker-compose.prod.yml run --rm frontend npm run build
+            
+            # Запускаем все сервисы
+            echo "🚀 Запуск сервисов..."
+            docker-compose --env-file .env -f docker-compose.prod.yml up -d --force-recreate --always-recreate-deps
 
             echo "🧹 Очистка неиспользуемых ресурсов..."
             docker system prune -f
