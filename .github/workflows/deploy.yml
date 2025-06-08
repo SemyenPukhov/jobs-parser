@@ -16,18 +16,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: deploy-jobs-parser
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch }}
-
-      - name: Debug Secrets
-        run: |
-          echo "DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}"
-          echo "DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}"
-          echo "SSH_HOST: ${{ secrets.SSH_HOST }}"
-          echo "SSH_USERNAME: ${{ secrets.SSH_USERNAME }}"
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -37,7 +31,7 @@ jobs:
 
       - name: Install Docker Compose
         run: |
-          sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo curl -SL "https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose version
 
@@ -48,32 +42,40 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e  # Exit on first error
             cd /home/deploy/app
             git config --global --add safe.directory /home/deploy/app
 
+            echo "🧪 Проверка .env..."
             if [ ! -s .env ]; then
-              echo "DB_USER=${{ secrets.DB_USER}}" > .env
-              echo "DB_PASSWORD=${{ secrets.DB_PASSWORD}}" >> .env
-              echo "DB_NAME=${{ secrets.DB_NAME}}" >> .env
-              echo "SSH_HOST=${{ secrets.SSH_HOST}}" >> .env
+              echo "DB_USER=${{ secrets.DB_USER }}" > .env
+              echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+              echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+              echo "SSH_HOST=${{ secrets.SSH_HOST }}" >> .env
               chown deploy:deploy .env
               chmod 600 .env
             fi
 
+            echo "📦 Обновление исходного кода..."
             if [ ! -d .git ]; then
-              # Если .env уже есть, он будет сохранен в temp и восстановлен после клонирования
-              if [ -f .env ]; then mv .env /tmp/.env_bak; fi
+              [ -f .env ] && cp .env /tmp/.env_bak
               rm -rf ./*
               git clone https://github.com/${{ github.repository }} .
-              if [ -f /tmp/.env_bak ]; then mv /tmp/.env_bak .env; fi
+              [ -f /tmp/.env_bak ] && mv /tmp/.env_bak .env
             else
-              # Сохраняем .env перед чисткой и обновлением Git, если он уже существует
-              if [ -f .env ]; then mv .env /tmp/.env_bak; fi
+              [ -f .env ] && cp .env /tmp/.env_bak
               git fetch origin ${{ github.event.inputs.branch }}
               git reset --hard origin/${{ github.event.inputs.branch }}
               git clean -fdx
-              # Возвращаем .env после чистки
-              if [ -f /tmp/.env_bak ]; then mv /tmp/.env_bak .env; fi
+              [ -f /tmp/.env_bak ] && mv /tmp/.env_bak .env
             fi
+
+            echo "🐳 Запуск docker-compose..."
+            if [ ! -f docker-compose.prod.yml ]; then
+              echo "Файл docker-compose.prod.yml не найден!" >&2
+              exit 1
+            fi
+
             docker-compose -f docker-compose.prod.yml up -d --build --force-recreate --always-recreate-deps
-            docker system prune -f 
+            docker system prune -f
+            echo "✅ Деплой завершён"
