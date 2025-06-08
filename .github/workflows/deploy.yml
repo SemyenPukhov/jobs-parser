@@ -81,6 +81,8 @@ jobs:
             
             docker volume prune -f
             
+            mkdir -p frontend/dist
+            
             docker-compose --env-file .env -f docker-compose.prod.yml up -d --build --force-recreate --always-recreate-deps
 
             echo "🧹 Очистка неиспользуемых ресурсов..."
