@@ -55,8 +55,9 @@ jobs:
               git clone https://github.com/${{ github.repository }} .
               if [ -f /tmp/.env_bak ]; then mv /tmp/.env_bak .env; fi
             else
-              git pull origin ${{ github.event.inputs.branch }}
+              git fetch origin
+              git reset --hard origin/${{ github.event.inputs.branch }}
+              git clean -fdx
             fi
-            docker-compose -f docker-compose.prod.yml pull
-            docker-compose -f docker-compose.prod.yml up -d
+            docker-compose -f docker-compose.prod.yml up -d --build --force-recreate --always-recreate-deps
             docker system prune -f 
