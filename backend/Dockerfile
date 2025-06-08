@@ -16,7 +16,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create alembic directory if it doesn't exist
-RUN mkdir -p alembic/versions
 
 # Command to run the application
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] 

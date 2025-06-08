@@ -29,7 +29,6 @@ build/
 .idea/
 
 # --- SQLite / Alembic / Migrations ---
-alembic.ini
 migrations/
 
 # --- Node / Frontend ---
