@@ -51,9 +51,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: http://${SSH_HOST}
+        VITE_API_URL: "http://${SSH_HOST:-localhost}"
     environment:
-      - VITE_API_URL=http://${SSH_HOST}
+      - VITE_API_URL=http://${SSH_HOST:-localhost}
     networks:
       - app-network
 
@@ -70,7 +70,7 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl
       - frontend:/usr/share/nginx/html
     environment:
-      - SSH_HOST=${SSH_HOST}
+      - SSH_HOST=${SSH_HOST:-localhost}
     depends_on:
       - frontend
       - backend

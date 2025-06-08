@@ -57,6 +57,17 @@ jobs:
             
             git config --global --add safe.directory /home/deploy/app
 
+            if [ ! -d .git ]; then
+              echo "Cloning repository..."
+              rm -rf ./*
+              git clone https://github.com/${{ github.repository }} .
+            else
+              echo "Updating repository..."
+              git fetch origin ${{ github.event.inputs.branch }}
+              git reset --hard origin/${{ github.event.inputs.branch }}
+              git clean -fdx
+            fi
+
             echo "Creating .env file..."
             # Создаем .env файл с нужными переменными
             cat > .env << EOL
@@ -73,17 +84,6 @@ jobs:
             echo "Contents of .env:"
             cat .env
 
-            if [ ! -d .git ]; then
-              echo "Cloning repository..."
-              rm -rf ./*
-              git clone https://github.com/${{ github.repository }} .
-            else
-              echo "Updating repository..."
-              git fetch origin ${{ github.event.inputs.branch }}
-              git reset --hard origin/${{ github.event.inputs.branch }}
-              git clean -fdx
-            fi
-
             echo "Setting SSH_HOST in environment..."
             export SSH_HOST=${{ secrets.SSH_HOST }}
             echo "SSH_HOST value: $SSH_HOST"
@@ -95,7 +95,9 @@ jobs:
 
             echo "Starting docker-compose..."
             docker-compose -f docker-compose.prod.yml down
-            docker-compose -f docker-compose.prod.yml up -d --build --force-recreate --always-recreate-deps
+
+            # Запускаем docker-compose с явной передачей переменных
+            docker-compose -f docker-compose.prod.yml --env-file .env up -d --build --force-recreate --always-recreate-deps
             
             echo "Checking container status..."
             docker-compose -f docker-compose.prod.yml ps

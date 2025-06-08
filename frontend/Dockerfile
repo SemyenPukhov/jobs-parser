@@ -23,8 +23,16 @@ RUN echo "VITE_API_URL=$VITE_API_URL" > .env.production
 RUN echo "Contents of .env.production:"
 RUN cat .env.production
 
-# Build the application
-RUN npm run build
+# Debug node_modules
+RUN echo "Contents of node_modules:"
+RUN ls -la node_modules
+
+# Debug package.json
+RUN echo "Contents of package.json:"
+RUN cat package.json
+
+# Build the application with error output
+RUN npm run build || (echo "Build failed!" && exit 1)
 
 # Debug built files
 RUN echo "Contents of dist directory:"
