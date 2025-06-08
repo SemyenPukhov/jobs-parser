@@ -13,6 +13,22 @@ services:
     networks:
       - app-network
 
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: alembic upgrade head
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_HOST=db
+      - DB_PORT=5432
+    depends_on:
+      - db
+    networks:
+      - app-network
+
   backend:
     build:
       context: ./backend
@@ -20,6 +36,7 @@ services:
     restart: always
     depends_on:
       - db
+      - migrate
     environment:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
