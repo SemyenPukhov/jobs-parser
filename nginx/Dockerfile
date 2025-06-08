@@ -1,13 +1,17 @@
+### Stage 1: Build frontend
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+COPY ../frontend ./
+
+RUN npm ci
+RUN npm run build
+
+### Stage 2: Serve with nginx
 FROM nginx:alpine
 
-# Копируем Nginx конфиг
 COPY conf.d/default.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Копируем собранный фронтенд из build-контекста
-COPY ../frontend/dist /usr/share/nginx/html
-
-# Открываем порты
 EXPOSE 80 443
-
-# Запускаем nginx
 CMD ["nginx", "-g", "daemon off;"]
