@@ -50,6 +50,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://${SSH_HOST}/api
     restart: always
     depends_on:
       - backend
