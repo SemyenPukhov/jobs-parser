@@ -75,5 +75,12 @@ jobs:
               # Возвращаем .env после чистки
               if [ -f /tmp/.env_bak ]; then mv /tmp/.env_bak .env; fi
             fi
+            # Устанавливаем SSH_HOST в окружение
+            export SSH_HOST=${{ secrets.SSH_HOST }}
+            echo "Setting SSH_HOST to: $SSH_HOST"
+            if [ -z "$SSH_HOST" ]; then
+              echo "Error: SSH_HOST is not set!"
+              exit 1
+            fi
             docker-compose -f docker-compose.prod.yml up -d --build --force-recreate --always-recreate-deps
             docker system prune -f 
