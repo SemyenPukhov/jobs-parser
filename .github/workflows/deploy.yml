@@ -15,7 +15,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: deploy-jobs-parser
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,30 +50,26 @@ jobs:
             cd /home/deploy/app
             git config --global --add safe.directory /home/deploy/app
 
-            if [ ! -s .env ]; then
-              echo "DB_USER=${{ secrets.DB_USER}}" > .env
-              echo "DB_PASSWORD=${{ secrets.DB_PASSWORD}}" >> .env
-              echo "DB_NAME=${{ secrets.DB_NAME}}" >> .env
-              echo "SSH_HOST=${{ secrets.SSH_HOST}}" >> .env
-              chown deploy:deploy .env
-              chmod 600 .env
-            fi
+            # Создаем .env файл с нужными переменными
+            cat > .env << EOL
+            DB_USER=${{ secrets.DB_USER}}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD}}
+            DB_NAME=${{ secrets.DB_NAME}}
+            SSH_HOST=${{ secrets.SSH_HOST}}
+            EOL
+
+            chown deploy:deploy .env
+            chmod 600 .env
 
             if [ ! -d .git ]; then
-              # Если .env уже есть, он будет сохранен в temp и восстановлен после клонирования
-              if [ -f .env ]; then mv .env /tmp/.env_bak; fi
               rm -rf ./*
               git clone https://github.com/${{ github.repository }} .
-              if [ -f /tmp/.env_bak ]; then mv /tmp/.env_bak .env; fi
             else
-              # Сохраняем .env перед чисткой и обновлением Git, если он уже существует
-              if [ -f .env ]; then mv .env /tmp/.env_bak; fi
               git fetch origin ${{ github.event.inputs.branch }}
               git reset --hard origin/${{ github.event.inputs.branch }}
               git clean -fdx
-              # Возвращаем .env после чистки
-              if [ -f /tmp/.env_bak ]; then mv /tmp/.env_bak .env; fi
             fi
+
             # Устанавливаем SSH_HOST в окружение
             export SSH_HOST=${{ secrets.SSH_HOST }}
             echo "Setting SSH_HOST to: $SSH_HOST"
@@ -82,5 +77,6 @@ jobs:
               echo "Error: SSH_HOST is not set!"
               exit 1
             fi
+
             docker-compose -f docker-compose.prod.yml up -d --build --force-recreate --always-recreate-deps
             docker system prune -f 
