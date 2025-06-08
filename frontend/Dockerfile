@@ -5,6 +5,8 @@ WORKDIR /app
 
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
+ENV NODE_ENV=production
+
 COPY package*.json ./
 RUN npm install --force
 COPY . .
@@ -15,3 +17,4 @@ FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
+
