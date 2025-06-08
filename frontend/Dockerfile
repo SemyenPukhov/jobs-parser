@@ -4,7 +4,6 @@ FROM node:20-slim as build
 WORKDIR /app
 
 ARG VITE_API_URL
-ENV VITE_API_URL=${VITE_API_URL}
 
 # Copy package files
 COPY package*.json ./
@@ -15,8 +14,8 @@ RUN npm install --force
 # Copy the rest of the application
 COPY . .
 
-# Build the application
-RUN npm run build
+# Build the application, ensuring VITE_API_URL is passed
+RUN VITE_API_URL=${VITE_API_URL} npm run build
 
 # Production stage
 FROM nginx:alpine
