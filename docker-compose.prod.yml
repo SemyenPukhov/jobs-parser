@@ -17,7 +17,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: sh -c "cd /app && alembic upgrade head"
+    command: sh -c "pwd && ls -la && alembic upgrade head"
+    working_dir: /app           # 👈 это главное!
     environment:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
