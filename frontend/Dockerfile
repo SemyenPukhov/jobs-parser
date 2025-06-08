@@ -8,9 +8,8 @@ ENV VITE_API_URL=$VITE_API_URL
 ENV NODE_ENV=production
 
 COPY package*.json ./
-RUN npm install --force
+RUN npm install --force --include=dev
 RUN npm install -g typescript
-RUN npm install --force --save-dev @vitejs/plugin-react
 COPY . .
 RUN npm run build
 
