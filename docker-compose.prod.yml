@@ -69,6 +69,8 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d
       - ./nginx/ssl:/etc/nginx/ssl
       - frontend:/usr/share/nginx/html
+    environment:
+      - SSH_HOST=${SSH_HOST}
     depends_on:
       - frontend
       - backend

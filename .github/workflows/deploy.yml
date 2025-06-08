@@ -47,9 +47,17 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -x  # Включаем вывод всех команд
+            echo "Starting deployment..."
+            
             cd /home/deploy/app
+            echo "Current directory: $(pwd)"
+            echo "Directory contents:"
+            ls -la
+            
             git config --global --add safe.directory /home/deploy/app
 
+            echo "Creating .env file..."
             # Создаем .env файл с нужными переменными
             cat > .env << EOL
             DB_USER=${{ secrets.DB_USER}}
@@ -58,25 +66,44 @@ jobs:
             SSH_HOST=${{ secrets.SSH_HOST}}
             EOL
 
+            echo "Setting permissions for .env..."
             chown deploy:deploy .env
             chmod 600 .env
+            
+            echo "Contents of .env:"
+            cat .env
 
             if [ ! -d .git ]; then
+              echo "Cloning repository..."
               rm -rf ./*
               git clone https://github.com/${{ github.repository }} .
             else
+              echo "Updating repository..."
               git fetch origin ${{ github.event.inputs.branch }}
               git reset --hard origin/${{ github.event.inputs.branch }}
               git clean -fdx
             fi
 
-            # Устанавливаем SSH_HOST в окружение
+            echo "Setting SSH_HOST in environment..."
             export SSH_HOST=${{ secrets.SSH_HOST }}
-            echo "Setting SSH_HOST to: $SSH_HOST"
+            echo "SSH_HOST value: $SSH_HOST"
+            
             if [ -z "$SSH_HOST" ]; then
               echo "Error: SSH_HOST is not set!"
               exit 1
             fi
 
+            echo "Starting docker-compose..."
+            docker-compose -f docker-compose.prod.yml down
             docker-compose -f docker-compose.prod.yml up -d --build --force-recreate --always-recreate-deps
-            docker system prune -f 
+            
+            echo "Checking container status..."
+            docker-compose -f docker-compose.prod.yml ps
+            
+            echo "Checking container logs..."
+            docker-compose -f docker-compose.prod.yml logs
+            
+            echo "Cleaning up..."
+            docker system prune -f
+            
+            echo "Deployment completed!" 
