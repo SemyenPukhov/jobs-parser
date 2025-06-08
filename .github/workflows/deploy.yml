@@ -21,29 +21,6 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }}
 
-      - name: Debug Secrets
-        run: |
-          echo "DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}"
-          echo "DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}"
-          echo "SSH_HOST: ${{ secrets.SSH_HOST }}"
-          echo "SSH_USERNAME: ${{ secrets.SSH_USERNAME }}"
-          echo "DB_USER: ${{ secrets.DB_USER }}"
-          echo "DB_PASSWORD: ${{ secrets.DB_PASSWORD }}"
-          echo "DB_NAME: ${{ secrets.DB_NAME }}"
-          echo "SSH_PRIVATE_KEY exists: ${{ secrets.SSH_PRIVATE_KEY != '' }}"
-
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-          echo "SSH key setup complete"
-          echo "SSH key permissions:"
-          ls -la ~/.ssh/
-          echo "SSH key content (first line):"
-          head -n 1 ~/.ssh/deploy_key
-
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -62,31 +39,19 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          key_path: ~/.ssh/deploy_key
           script: |
-            set -x  # Включаем вывод всех команд
-            echo "Starting deployment..."
-            
             cd /home/deploy/app
-            echo "Current directory: $(pwd)"
-            echo "Directory contents:"
-            ls -la
-            
             git config --global --add safe.directory /home/deploy/app
 
             if [ ! -d .git ]; then
-              echo "Cloning repository..."
               rm -rf ./*
               git clone https://github.com/${{ github.repository }} .
             else
-              echo "Updating repository..."
               git fetch origin ${{ github.event.inputs.branch }}
               git reset --hard origin/${{ github.event.inputs.branch }}
               git clean -fdx
             fi
 
-            echo "Creating .env file..."
-            # Создаем .env файл с нужными переменными
             cat > .env << EOL
             DB_USER=${{ secrets.DB_USER}}
             DB_PASSWORD=${{ secrets.DB_PASSWORD}}
@@ -94,35 +59,9 @@ jobs:
             SSH_HOST=${{ secrets.SSH_HOST}}
             EOL
 
-            echo "Setting permissions for .env..."
             chown deploy:deploy .env
             chmod 600 .env
-            
-            echo "Contents of .env:"
-            cat .env
 
-            echo "Setting SSH_HOST in environment..."
-            export SSH_HOST=${{ secrets.SSH_HOST }}
-            echo "SSH_HOST value: $SSH_HOST"
-            
-            if [ -z "$SSH_HOST" ]; then
-              echo "Error: SSH_HOST is not set!"
-              exit 1
-            fi
-
-            echo "Starting docker-compose..."
             docker-compose -f docker-compose.prod.yml down
-
-            # Запускаем docker-compose с явной передачей переменных
             docker-compose -f docker-compose.prod.yml --env-file .env up -d --build --force-recreate --always-recreate-deps
-            
-            echo "Checking container status..."
-            docker-compose -f docker-compose.prod.yml ps
-            
-            echo "Checking container logs..."
-            docker-compose -f docker-compose.prod.yml logs
-            
-            echo "Cleaning up..."
-            docker system prune -f
-            
-            echo "Deployment completed!" 
+            docker system prune -f 
