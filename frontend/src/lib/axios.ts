@@ -4,8 +4,11 @@ import axios from "axios";
 console.log("Environment variables:", import.meta.env);
 console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
 
+const base = import.meta.env.VITE_API_URL || "http://localhost:58000";
+console.log("baseURL", `${base}/api`);
+
 const api = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL || "http://localhost:58000") + "/api",
+  baseURL: `${base}/api`,
 });
 
 // Добавляем перехватчик для отладки запросов
