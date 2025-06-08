@@ -12,6 +12,8 @@ RUN npm install --force
 RUN npm install -g typescript
 RUN npm install --force --save-dev autoprefixer
 RUN npm install --force --save-dev @tailwindcss/postcss
+RUN npm install --force --save-dev tailwindcss autoprefixer postcss
+
 
 
 # Build the application
