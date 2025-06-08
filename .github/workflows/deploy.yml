@@ -27,12 +27,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Install Docker Compose
-        run: |
-          sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose version
-
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -40,37 +34,12 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Создаем директорию если её нет
-            sudo mkdir -p /home/${{ secrets.SSH_USERNAME }}/app
-            sudo chown ${{ secrets.SSH_USERNAME }}:${{ secrets.SSH_USERNAME }} /home/${{ secrets.SSH_USERNAME }}/app
-
             cd /home/${{ secrets.SSH_USERNAME }}/app
-            git config --global --add safe.directory /home/${{ secrets.SSH_USERNAME }}/app
-
-            if [ ! -d .git ]; then
-              rm -rf ./*
-              git clone https://github.com/${{ github.repository }} .
-            else
-              git fetch origin ${{ github.event.inputs.branch }}
-              git reset --hard origin/${{ github.event.inputs.branch }}
-              git clean -fdx
-            fi
-
-            cat > .env << EOL
-            DB_USER=${{ secrets.DB_USER}}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD}}
-            DB_NAME=${{ secrets.DB_NAME}}
-            SSH_HOST=${{ secrets.SSH_HOST}}
-            EOL
-
-            chmod 600 .env
-
-            # Проверяем права на docker-compose
-            if ! command -v docker-compose &> /dev/null; then
-              echo "docker-compose not found"
-              exit 1
-            fi
-
-            docker-compose -f docker-compose.prod.yml down
-            docker-compose -f docker-compose.prod.yml --env-file .env up -d --build --force-recreate --always-recreate-deps
-            docker system prune -f 
+            git pull origin ${{ github.event.inputs.branch }}
+            
+            echo "DB_USER=${{ secrets.DB_USER}}" > .env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD}}" >> .env
+            echo "DB_NAME=${{ secrets.DB_NAME}}" >> .env
+            echo "SSH_HOST=${{ secrets.SSH_HOST}}" >> .env
+            
+            docker-compose -f docker-compose.prod.yml up -d --build 
