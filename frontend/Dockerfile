@@ -17,8 +17,11 @@ COPY . .
 # Debug VITE_API_URL before build
 RUN echo "VITE_API_URL in Dockerfile build: $VITE_API_URL"
 
-# Build the application, ensuring VITE_API_URL is passed
-RUN VITE_API_URL=${VITE_API_URL} npm run build
+# Create .env file with VITE_API_URL
+RUN echo "VITE_API_URL=$VITE_API_URL" > .env
+
+# Build the application
+RUN npm run build
 
 # Production stage
 FROM nginx:alpine
