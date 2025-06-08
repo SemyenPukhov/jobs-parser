@@ -42,7 +42,7 @@ function App() {
   const [comment, setComment] = useState("");
   const [id, setId] = useState<string | null>(null);
 
-  const { data: jobs } = usePendingJobs();
+  const { data: jobs, isLoading } = usePendingJobs();
   const { mutate: acceptOrRejectJob } = useAcceptOrRejectJob();
 
   const open = Boolean(title);
@@ -64,8 +64,7 @@ function App() {
 
     acceptOrRejectJob({ id, action: title.action as AllowedActions, comment });
     setTitle(null);
-
-    console.log("action :>> ", action);
+    setComment("");
   };
 
   return (
@@ -86,69 +85,80 @@ function App() {
         </Button>
       </DialogWrapper>
       <div className="flex flex-col gap-2">
-        {jobs?.map((j: any) => {
-          return (
-            <Card key={j.id}>
-              <CardHeader>
-                <CardTitle>
-                  <div className="flex">
-                    <span className="flex gap-2 mr-auto">{j.source}</span>
-                    <a href={j.company_url}>
-                      Компания: <span className="font-bold">{j.company}</span>
-                    </a>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between">
-                    <h3 className="font-bold">{j.title}</h3>
-                    <a href={j.url}>Ссылка на вакансию</a>
-                  </div>
+        {isLoading && (
+          <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
+            Загрузка вакансий
+          </h2>
+        )}
+        {!isLoading && jobs && jobs.length == 0 && (
+          <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
+            Новых нет. Все обработаны 💯
+          </h2>
+        )}
+        {!isLoading &&
+          jobs?.map((j: any) => {
+            return (
+              <Card key={j.id}>
+                <CardHeader>
+                  <CardTitle>
+                    <div className="flex">
+                      <span className="flex gap-2 mr-auto">{j.source}</span>
+                      <a href={j.company_url}>
+                        Компания: <span className="font-bold">{j.company}</span>
+                      </a>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between">
+                      <h3 className="font-bold">{j.title}</h3>
+                      <a href={j.url}>Ссылка на вакансию</a>
+                    </div>
 
-                  <div>
-                    <Accordion type="single" collapsible className="w-full">
-                      <AccordionItem value="item-1">
-                        <AccordionTrigger>Описание запроса</AccordionTrigger>
-                        <AccordionContent className="flex flex-col gap-4 text-balance text-left">
-                          {j.description
-                            .split("\n")
-                            .filter(Boolean)
-                            .map((text, i) => (
-                              <p key={i}>{text}</p>
-                            ))}
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
+                    <div>
+                      <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="item-1">
+                          <AccordionTrigger>Описание запроса</AccordionTrigger>
+                          <AccordionContent className="flex flex-col gap-4 text-balance text-left">
+                            {j.description
+                              .split("\n")
+                              .filter(Boolean)
+                              .map((text, i) => (
+                                <p key={i}>{text}</p>
+                              ))}
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
+                </CardContent>
 
-              <CardFooter>
-                <CardAction>
-                  <div className="flex gap-3">
-                    <Button
-                      size="icon"
-                      onClick={() => handleOpenChange("reject", j.id)}
-                    >
-                      <Dismiss28Regular className=" text-red-500" />
-                    </Button>
+                <CardFooter>
+                  <CardAction>
+                    <div className="flex gap-3">
+                      <Button
+                        size="icon"
+                        onClick={() => handleOpenChange("reject", j.id)}
+                      >
+                        <Dismiss28Regular className=" text-red-500" />
+                      </Button>
 
-                    <Button
-                      size="icon"
-                      onClick={() => handleOpenChange("accept", j.id)}
-                    >
-                      <Checkmark28Regular className="text-green-500" />
-                    </Button>
-                  </div>
-                </CardAction>
-                <CardDescription className="flex gap-2 ml-auto">
-                  Спарсили: {formatDate(j.parsed_at)}
-                </CardDescription>
-              </CardFooter>
-            </Card>
-          );
-        })}
+                      <Button
+                        size="icon"
+                        onClick={() => handleOpenChange("accept", j.id)}
+                      >
+                        <Checkmark28Regular className="text-green-500" />
+                      </Button>
+                    </div>
+                  </CardAction>
+                  <CardDescription className="flex gap-2 ml-auto">
+                    Спарсили: {formatDate(j.parsed_at)}
+                  </CardDescription>
+                </CardFooter>
+              </Card>
+            );
+          })}
       </div>
     </>
   );
