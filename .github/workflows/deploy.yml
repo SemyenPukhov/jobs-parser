@@ -87,6 +87,13 @@ jobs:
             mkdir -p frontend/dist
             chmod 755 frontend/dist
 
+            # Устанавливаем Node.js
+            echo "📦 Установка Node.js..."
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            node --version
+            npm --version
+
             # Собираем frontend
             echo "🏗️ Сборка frontend..."
             cd frontend
