@@ -29,8 +29,12 @@ FROM nginx:alpine
 # Copy built assets from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
+# Add script to inject environment variables
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
 # Expose port
 EXPOSE 80
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"] 
+# Start nginx with environment variable injection
+CMD ["/docker-entrypoint.sh"] 
