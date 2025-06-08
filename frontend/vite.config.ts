@@ -13,6 +13,10 @@ export default defineConfig({
   build: {
     sourcemap: true,
     outDir: 'dist',
+    cssMinify: true,
+  },
+  css: {
+    postcss: './postcss.config.js',
   },
 })
 
