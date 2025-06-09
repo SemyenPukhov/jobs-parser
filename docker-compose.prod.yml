@@ -71,8 +71,8 @@ services:
 
   nginx:
     build:
-      context: ./nginx
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: nginx/Dockerfile
     restart: unless-stopped
     ports:
       - "8080:80"  # лучше не 80, чтобы не было конфликта
