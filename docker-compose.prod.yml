@@ -73,6 +73,8 @@ services:
     build:
       context: .
       dockerfile: nginx/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}  
     restart: unless-stopped
     ports:
       - "80:80"  # лучше не 80, чтобы не было конфликта
