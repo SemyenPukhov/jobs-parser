@@ -3,6 +3,10 @@ FROM node:20-alpine as frontend-builder
 
 WORKDIR /app
 
+# Принимаем build arg
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 # Copy frontend files
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --force
