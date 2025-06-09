@@ -10,9 +10,9 @@ ENV VITE_API_URL=$VITE_API_URL
 COPY package*.json ./
 RUN npm install --force
 RUN npm install -g typescript
-RUN npm install --force --save-dev autoprefixer
-RUN npm install --force --save-dev @tailwindcss/postcss
-RUN npm install --force --save-dev tailwindcss autoprefixer postcss
+# RUN npm install --force --save-dev autoprefixer
+# RUN npm install --force --save-dev @tailwindcss/postcss
+# RUN npm install --force --save-dev tailwindcss autoprefixer postcss
 
 
 
