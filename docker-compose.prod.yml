@@ -41,17 +41,6 @@ services:
     networks:
       - app-network
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - VITE_API_URL=http://${SSH_HOST}
-    volumes:
-      - frontend-dist:/usr/share/nginx/html
-    networks:
-      - app-network
-
   backend:
     build:
       context: ./backend
@@ -86,10 +75,9 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8080:80"  # лучше не 80, чтобы не было конфликта
     depends_on:
       - backend
-      - frontend
     networks:
       - app-network
     deploy:
@@ -104,4 +92,3 @@ networks:
 
 volumes:
   pg_data:
-  frontend-dist:
