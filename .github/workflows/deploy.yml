@@ -56,11 +56,11 @@ jobs:
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             DB_NAME=${{ secrets.DB_NAME }}
             SSH_HOST=${{ secrets.SSH_HOST }}
+            VITE_API_URL=http://${{ secrets.SSH_HOST }}
             EOL
 
             # Запуск сервисов
             docker compose -f docker-compose.prod.yml down
             docker compose -f docker-compose.prod.yml up -d --build
-
 
             echo "✅ Деплой завершён"
