@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 from app.logger import logger
 from functools import lru_cache
 import time
+import uuid
 
 # Уменьшаем количество одновременных запросов
 sem = asyncio.Semaphore(3)
@@ -15,6 +16,7 @@ sem = asyncio.Semaphore(3)
 # Кэш для хранения результатов парсинга на 1 час
 CACHE_TTL = timedelta(hours=1)
 parsed_urls_cache: Dict[str, tuple[datetime, Dict]] = {}
+
 
 URLS = [
     "https://startup.jobs/?remote=true&since=24h&q=%22React%22",
@@ -74,7 +76,7 @@ async def get_job_description(url: str) -> Dict[str, str]:
         soup = BeautifulSoup(job_html, "html.parser")
         desc_div = soup.find("div", class_=["trix-content"])
         apply_url = find_apply_link(soup)
-        
+
         if not desc_div:
             logger.warning(f"⚠️ Не найдено описание для {url}")
             return {"description": "", "apply_url": apply_url}
@@ -83,7 +85,7 @@ async def get_job_description(url: str) -> Dict[str, str]:
             "description": desc_div.get_text(),
             "apply_url": apply_url
         }
-        
+
         # Кэшируем результат
         cache_result(url, result)
         return result
@@ -102,7 +104,7 @@ async def process_job_div(job_div: ResultSet[Any]) -> Dict | None:
 
         href = link_tag["href"].lstrip("/")
         full_job_url = f"{base_url}/{href}"
-        
+
         company_link_tag = link_tag.find_next("a")
         if not company_link_tag:
             return None
@@ -147,7 +149,8 @@ async def parse_jobs_from_html(html: str) -> List[Job]:
         )
 
         # Фильтруем None и исключения
-        parsed_jobs = [job for job in parsed_jobs if job is not None and not isinstance(job, Exception)]
+        parsed_jobs = [
+            job for job in parsed_jobs if job is not None and not isinstance(job, Exception)]
 
         jobs = []
         for job in parsed_jobs:
@@ -175,8 +178,10 @@ async def scrape_startup_jobs(session: Session):
     all_jobs = []
 
     try:
+        screenshot_uuid = str(uuid.uuid4())[:8]
         # Получаем HTML со всех URL с ограничением одновременных запросов
-        tasks = [fetch_html_browser(url) for url in URLS]
+        tasks = [fetch_html_browser(
+            url, f"startup_jobs_{screenshot_uuid}.png") for url in URLS]
         html_results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Обрабатываем результаты
@@ -186,7 +191,7 @@ async def scrape_startup_jobs(session: Session):
                 continue
 
             jobs = await parse_jobs_from_html(html)
-            
+
             # Проверяем дубликаты и сохраняем новые вакансии
             for job in jobs:
                 existing = session.exec(
@@ -204,8 +209,9 @@ async def scrape_startup_jobs(session: Session):
             session.commit()
 
         end_time = time.time()
-        logger.info(f"✅ Скрапинг завершен за {end_time - start_time:.2f} секунд. Добавлено {len(all_jobs)} вакансий")
-        
+        logger.info(
+            f"✅ Скрапинг завершен за {end_time - start_time:.2f} секунд. Добавлено {len(all_jobs)} вакансий")
+
         return all_jobs
     except Exception as e:
         logger.error(f"❌ Критическая ошибка при скрапинге: {str(e)}")
