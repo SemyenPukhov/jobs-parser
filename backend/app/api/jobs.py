@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from app.parsers.startup_jobs import scrape_startup_jobs
 from app.parsers.thehub_io import scrape_thehub_jobs
 from sqlmodel import Session, select
@@ -17,15 +17,15 @@ router = APIRouter()
 
 
 @router.post("/scrape/startup-jobs")
-async def run_scraper(session: Session = Depends(get_session)):
-    jobs = await scrape_startup_jobs(session)
-    return {"added": len(jobs)}
+async def run_scraper(background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
+    background_tasks.add_task(scrape_startup_jobs, session)
+    return {"message": "Scraping started in background"}
 
 
 @router.post("/scrape/thehub-jobs")
-async def run_scraper(session: Session = Depends(get_session)):
-    jobs = await scrape_thehub_jobs(session)
-    return {"added": len(jobs)}
+async def run_scraper(background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
+    background_tasks.add_task(scrape_thehub_jobs, session)
+    return {"message": "Scraping started in background"}
 
 
 @router.post("/jobs/{job_id}/accept")
