@@ -35,3 +35,4 @@ tenacity==9.1.2
 python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
+email-validator
