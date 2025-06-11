@@ -28,7 +28,7 @@ async def get_browser_page(url: str):
 
         # Настройки для VPS
         browser = await p.chromium.launch(
-            headless=False,
+            headless=True,
             args=[
                 '--no-sandbox',
                 '--disable-setuid-sandbox',

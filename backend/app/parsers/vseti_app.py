@@ -21,55 +21,81 @@ SOURCE = "vseti.app"
 
 async def process_page_throttled(job: Dict[str, str], browser):
     async with sem:
-        return await get_job_details(job, browser)
+        try:
+            return await get_job_details(job, browser)
+        except Exception as e:
+            logger.error(
+                f"❌ Ошибка при обработке вакансии {job.get('title', 'Unknown')}: {str(e)}")
+            return None
 
 
 async def get_full_jobs_page(url: str):
     max_pages = 10
     page_num = 0
 
-    async with get_browser_page(url) as page:
-        while page_num < max_pages:
-            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            next_page_link = page.locator('a[aria-label="Next Page"]')
+    try:
+        async with get_browser_page(url) as page:
+            while page_num < max_pages:
+                await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                next_page_link = page.locator('a[aria-label="Next Page"]')
 
-            if not await next_page_link.is_visible():
+                if not await next_page_link.is_visible():
+                    logger.info(
+                        f"📊 Кнопки 'Next Page' больше нет. Отдаю контент. Пройдено страниц: {page_num}")
+                    break
+
                 logger.info(
-                    f"📊 Кнопки 'Next Page' больше нет. Отдаю контент. Пройдено страниц: {page_num}")
-                break
+                    f"📊 Нашел кнопку 'Next Page'. Жму (страница {page_num + 1})")
+                await next_page_link.click()
 
-            logger.info(
-                f"📊 Нашел кнопку 'Next Page'. Жму (страница {page_num + 1})")
-            await next_page_link.click()
+                try:
+                    await page.wait_for_load_state("networkidle", timeout=10000)
+                except Exception as e:
+                    logger.warning(
+                        f"⚠️ Загрузка не завершилась по networkidle: {e}. Жду ещё 5 секунд...")
+                    await page.wait_for_timeout(5000)
 
-            try:
-                await page.wait_for_load_state("networkidle", timeout=10000)
-            except Exception as e:
-                logger.warning(
-                    f"⚠️ Загрузка не завершилась по networkidle: {e}. Жду ещё 5 секунд...")
-                await page.wait_for_timeout(5000)
-
-            page_num += 1
-        return await page.content()
+                page_num += 1
+            return await page.content()
+    except Exception as e:
+        logger.error(f"❌ Ошибка при загрузке страницы {url}: {str(e)}")
+        return None
 
 
 async def get_job_details(job: Dict[str, str], browser):
-    html = await fetch_html_async(job["href"], browser)
-    soup = BeautifulSoup(html, "html.parser")
-    description_div = soup.find('div', class_="content_vacancy_div")
-    job_description = description_div.get_text(
-    ) if description_div is not None else "Не найдено"
-    company_link_tag = soup.find("a", string="Подробнее о компании")
-    company_url = company_link_tag['href']
+    try:
+        html = await fetch_html_async(job["href"], browser)
+        if not html:
+            logger.warning(f"⚠️ Пустой HTML для {job['href']}")
+            return None
 
-    return {"url": job["href"],
+        soup = BeautifulSoup(html, "html.parser")
+        description_div = soup.find('div', class_="content_vacancy_div")
+        job_description = description_div.get_text(
+        ) if description_div is not None else "Не найдено"
+
+        company_link_tag = soup.find("a", string="Подробнее о компании")
+        company_url = company_link_tag['href'] if company_link_tag else ""
+
+        return {
+            "url": job["href"],
             "title": job["title"],
             "description": job_description,
             "company_url": company_url,
-            "company": job["company"]}
+            "company": job["company"]
+        }
+    except Exception as e:
+        logger.error(
+            f"❌ Ошибка при парсинге деталей вакансии {job.get('href', 'Unknown')}: {str(e)}")
+        return None
 
 
-async def get_job_links_from_page(html: str) -> Optional[List[Dict[str, str]]]:
+async def get_job_links_from_page(html: str) -> List[Dict[str, str]]:
+    """Возвращает список вакансий или пустой список в случае ошибки"""
+    if not html:
+        logger.warning("⚠️ Пустой HTML при парсинге ссылок на вакансии")
+        return []
+
     try:
         soup = BeautifulSoup(html, "html.parser")
         links = soup.find_all("a", class_="card-jobs")
@@ -78,11 +104,23 @@ async def get_job_links_from_page(html: str) -> Optional[List[Dict[str, str]]]:
         for job_link in links:
             try:
                 title_div = job_link.find('div', class_='company-titile')
+                if not title_div:
+                    continue
+
                 company_p = title_div.find('p')
+                if not company_p:
+                    continue
+
                 company = company_p.get_text(strip=True)
                 job_title_tag = job_link.find('h1')
+                if not job_title_tag:
+                    continue
+
                 job_title = job_title_tag.get_text(strip=True)
-                job_href = job_link['href']
+                job_href = job_link.get('href')
+                if not job_href:
+                    continue
+
                 job_details = {
                     "title": job_title,
                     "company": company,
@@ -90,11 +128,15 @@ async def get_job_links_from_page(html: str) -> Optional[List[Dict[str, str]]]:
                 }
                 job_links.append(job_details)
             except Exception as e:
-                continue  # пропускаем сломанные элементы, но не всю страницу
+                logger.warning(
+                    f"⚠️ Ошибка при парсинге отдельной вакансии: {str(e)}")
+                continue
 
+        logger.info(f"📊 Найдено {len(job_links)} вакансий на странице")
         return job_links
     except Exception as e:
-        return None
+        logger.error(f"❌ Ошибка при парсинге ссылок на вакансии: {str(e)}")
+        return []
 
 
 async def scrape_vseti_app_jobs(session: Session):
@@ -103,45 +145,98 @@ async def scrape_vseti_app_jobs(session: Session):
     all_jobs = []
 
     try:
-        tasks = [get_full_jobs_page(
-            url) for url in URLS]
+        # Получаем HTML страниц
+        tasks = [get_full_jobs_page(url) for url in URLS]
         html_pages = await asyncio.gather(*tasks, return_exceptions=True)
 
-        job_links_task = [get_job_links_from_page(
-            html) for html in html_pages]
-        jobs_nested = await asyncio.gather(*job_links_task, return_exceptions=True)
-        jobs = [job for sublist in jobs_nested if not isinstance(
-            sublist, Exception) for job in sublist]
+        # Фильтруем успешные результаты
+        valid_html_pages = []
+        for i, html in enumerate(html_pages):
+            if isinstance(html, Exception):
+                logger.error(
+                    f"❌ Ошибка при загрузке URL {URLS[i]}: {str(html)}")
+            elif html is not None:
+                valid_html_pages.append(html)
+            else:
+                logger.warning(f"⚠️ Пустой HTML для URL {URLS[i]}")
 
+        if not valid_html_pages:
+            logger.error("❌ Не удалось загрузить ни одной страницы")
+            return []
+
+        # Парсим ссылки на вакансии
+        job_links_tasks = [get_job_links_from_page(
+            html) for html in valid_html_pages]
+        jobs_nested = await asyncio.gather(*job_links_tasks, return_exceptions=True)
+
+        # Объединяем все вакансии в один список
+        jobs = []
+        for job_list in jobs_nested:
+            if isinstance(job_list, Exception):
+                logger.error(f"❌ Ошибка при парсинге ссылок: {str(job_list)}")
+            elif job_list is not None:
+                jobs.extend(job_list)
+
+        if not jobs:
+            logger.warning("⚠️ Не найдено ни одной вакансии")
+            return []
+
+        logger.info(
+            f"📊 Всего найдено {len(jobs)} вакансий для детального парсинга")
+
+        # Получаем детальную информацию о вакансиях
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=False)
+            # Используем headless для прода
+            browser = await p.chromium.launch(headless=True)
 
             all_results = await asyncio.gather(*[
                 process_page_throttled(job, browser) for job in jobs
-            ])
+            ], return_exceptions=True)
+
             await browser.close()
 
-        for job_info in all_results:
-            existing = session.exec(
-                select(Job).where(Job.url == job_info["url"])).first()
-            if not existing:
-                job = Job(
-                    title=job_info["title"],
-                    url=job_info["url"],
-                    description=job_info["description"],
-                    source=SOURCE,
-                    parsed_at=datetime.utcnow(),
-                    company_url=job_info["company_url"],
-                    company=job_info["company"]
-                )
-                session.add(job)
-                all_jobs.append(job)
-                logger.info(f"✅ Сохранено: {job_info['title']}")
-            else:
-                logger.info(f"⚠️ Пропущено (дубликат): {existing.title}")
+        # Обрабатываем результаты
+        valid_jobs = []
+        for result in all_results:
+            if isinstance(result, Exception):
+                logger.error(f"❌ Ошибка при обработке вакансии: {str(result)}")
+            elif result is not None:
+                valid_jobs.append(result)
+
+        logger.info(f"📊 Успешно обработано {len(valid_jobs)} вакансий")
+
+        # Сохраняем в базу данных
+        for job_info in valid_jobs:
+            try:
+                existing = session.exec(
+                    select(Job).where(Job.url == job_info["url"])).first()
+                if not existing:
+                    job = Job(
+                        title=job_info["title"],
+                        url=job_info["url"],
+                        description=job_info["description"],
+                        source=SOURCE,
+                        parsed_at=datetime.utcnow(),
+                        company_url=job_info.get("company_url", ""),
+                        company=job_info["company"]
+                    )
+                    session.add(job)
+                    all_jobs.append(job)
+                    logger.info(f"✅ Сохранено: {job_info['title']}")
+                else:
+                    logger.info(f"⚠️ Пропущено (дубликат): {existing.title}")
+            except Exception as e:
+                logger.error(
+                    f"❌ Ошибка при сохранении вакансии {job_info.get('title', 'Unknown')}: {str(e)}")
+                continue
 
         if all_jobs:
-            session.commit()
+            try:
+                session.commit()
+                logger.info(f"✅ Коммит в БД успешен")
+            except Exception as e:
+                logger.error(f"❌ Ошибка при коммите в БД: {str(e)}")
+                session.rollback()
 
         end_time = time.time()
         logger.info(
