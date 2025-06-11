@@ -102,7 +102,7 @@ function App() {
                   <CardTitle>
                     <div className="flex">
                       <span className="flex gap-2 mr-auto">{j.source}</span>
-                      <a href={j.company_url}>
+                      <a href={j.company_url} target="_blank">
                         Компания: <span className="font-bold">{j.company}</span>
                       </a>
                     </div>
@@ -112,7 +112,7 @@ function App() {
                   <div className="flex flex-col gap-2">
                     <div className="flex justify-between">
                       <h3 className="font-bold">{j.title}</h3>
-                      <a href={j.url}>Ссылка на вакансию</a>
+                      <a href={j.url} target="_blank">Ссылка на вакансию</a>
                     </div>
 
                     <div>
