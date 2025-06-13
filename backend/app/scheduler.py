@@ -6,6 +6,7 @@ from app.parsers.thehub_io import scrape_thehub_jobs
 from app.parsers.vseti_app import scrape_vseti_app_jobs
 from app.db import get_session
 from app.logger import logger
+from app.utils.slack import send_slack_message, create_parser_status_block
 import asyncio
 
 # Создаем планировщик
@@ -15,22 +16,51 @@ scheduler = AsyncIOScheduler()
 async def run_parsers():
     """Запускает все парсеры последовательно"""
     logger.info("🚀 Начинаю запуск парсеров")
+    await send_slack_message("🚀 Начинаю ежедневный запуск парсеров")
+
     session = next(get_session())
 
     try:
         # Запускаем парсеры последовательно
         logger.info("📊 Запускаю startup.jobs парсер")
+        await send_slack_message(
+            "Запуск парсера startup.jobs",
+            blocks=create_parser_status_block("startup.jobs", "in_progress")
+        )
         await scrape_startup_jobs(session)
+        await send_slack_message(
+            "Парсер startup.jobs завершил работу",
+            blocks=create_parser_status_block("startup.jobs", "success")
+        )
 
         logger.info("📊 Запускаю thehub.io парсер")
+        await send_slack_message(
+            "Запуск парсера thehub.io",
+            blocks=create_parser_status_block("thehub.io", "in_progress")
+        )
         await scrape_thehub_jobs(session)
+        await send_slack_message(
+            "Парсер thehub.io завершил работу",
+            blocks=create_parser_status_block("thehub.io", "success")
+        )
 
         logger.info("📊 Запускаю vseti.app парсер")
+        await send_slack_message(
+            "Запуск парсера vseti.app",
+            blocks=create_parser_status_block("vseti.app", "in_progress")
+        )
         await scrape_vseti_app_jobs(session)
+        await send_slack_message(
+            "Парсер vseti.app завершил работу",
+            blocks=create_parser_status_block("vseti.app", "success")
+        )
 
         logger.info("✅ Все парсеры успешно завершили работу")
+        await send_slack_message("✅ Все парсеры успешно завершили работу")
     except Exception as e:
-        logger.error(f"❌ Ошибка при запуске парсеров: {str(e)}")
+        error_message = f"❌ Ошибка при запуске парсеров: {str(e)}"
+        logger.error(error_message)
+        await send_slack_message(error_message)
     finally:
         session.close()
 
@@ -55,6 +85,8 @@ def start_scheduler():
     # Запускаем планировщик
     scheduler.start()
     logger.info("✅ Планировщик запущен")
+    asyncio.create_task(send_slack_message(
+        "✅ Планировщик запущен и готов к работе"))
 
     # Запускаем парсеры сразу при старте (опционально)
     # asyncio.create_task(run_parsers())
