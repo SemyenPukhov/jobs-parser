@@ -36,3 +36,5 @@ python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
 email-validator
+apscheduler==3.10.4
+pytz==2024.1
