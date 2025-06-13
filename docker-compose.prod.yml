@@ -58,6 +58,9 @@ services:
       DB_NAME: ${DB_NAME}
       DB_HOST: db
       DB_PORT: 5432
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
+      SLACK_CHANNEL_ID: ${SLACK_CHANNEL_ID}
+      ENVIRONMENT: ${ENVIRONMENT}
     networks:
       - app-network
     deploy:
