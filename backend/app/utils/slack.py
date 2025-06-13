@@ -3,6 +3,9 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from app.logger import logger
 
+# Получаем окружение
+ENV = os.getenv("ENVIRONMENT", "dev").upper()
+
 # Инициализируем клиент Slack
 slack_token = os.getenv("SLACK_BOT_TOKEN")
 slack_channel = os.getenv("SLACK_CHANNEL_ID")
@@ -29,9 +32,17 @@ async def send_slack_message(message: str, blocks: list = None) -> bool:
         return False
 
     try:
+        # Добавляем префикс окружения к сообщению
+        prefixed_message = f"[{ENV}] {message}"
+        
+        # Если есть блоки, добавляем префикс к тексту в первом блоке
+        if blocks and len(blocks) > 0 and blocks[0].get("type") == "section":
+            if "text" in blocks[0] and "text" in blocks[0]["text"]:
+                blocks[0]["text"]["text"] = f"[{ENV}] {blocks[0]['text']['text']}"
+
         response = client.chat_postMessage(
             channel=slack_channel,
-            text=message,
+            text=prefixed_message,
             blocks=blocks
         )
         return response["ok"]
