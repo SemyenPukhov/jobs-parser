@@ -1,5 +1,6 @@
 import logging
-from pathlib import Path
+import sys
+from logging.handlers import RotatingFileHandler
 import os
 
 # Получаем окружение из переменных среды
@@ -28,12 +29,16 @@ formatter = EnvironmentFormatter(
 )
 
 # Хендлер для файла
-file_handler = logging.FileHandler(LOG_FILE)
+file_handler = RotatingFileHandler(
+    LOG_FILE,
+    maxBytes=10*1024*1024,  # 10MB
+    backupCount=5
+)
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
 # Хендлер для консоли
-console_handler = logging.StreamHandler()
+console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
@@ -42,9 +47,15 @@ logger.propagate = False
 
 # Переопределяем методы логирования для добавления уровня логирования
 def _log_with_level(level, msg, *args, **kwargs):
-    if isinstance(msg, str):
-        msg = f"[{level}] {msg}"
-    return logger.log(level, msg, *args, **kwargs)
+    level_map = {
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL
+    }
+    numeric_level = level_map.get(level, logging.INFO)
+    return logger.log(numeric_level, msg, *args, **kwargs)
 
 logger.debug = lambda msg, *args, **kwargs: _log_with_level("DEBUG", msg, *args, **kwargs)
 logger.info = lambda msg, *args, **kwargs: _log_with_level("INFO", msg, *args, **kwargs)
