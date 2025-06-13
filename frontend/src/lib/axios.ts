@@ -14,6 +14,12 @@ const api = axios.create({
 // Добавляем перехватчик для отладки запросов
 api.interceptors.request.use((request) => {
   console.log("Starting Request:", request);
+  const token = localStorage.getItem('auth_token');
+  
+  if (token) {
+    request.headers.Authorization = `Bearer ${token}`;
+  }
+  
   return request;
 });
 
@@ -24,6 +30,9 @@ api.interceptors.response.use(
   },
   (error) => {
     console.error("Response Error:", error);
+    if (error.response?.status === 401) {
+      localStorage.removeItem('auth_token');
+    }
     return Promise.reject(error);
   }
 );
