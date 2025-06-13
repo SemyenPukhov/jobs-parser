@@ -57,6 +57,8 @@ jobs:
             DB_NAME=${{ secrets.DB_NAME }}
             SSH_HOST=${{ secrets.SSH_HOST }}
             VITE_API_URL=http://${{ secrets.SSH_HOST }}
+            SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}
+            SLACK_CHANNEL_ID=${{ secrets.SLACK_CHANNEL_ID }}
             EOL
 
             # Запуск сервисов

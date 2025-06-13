@@ -23,7 +23,7 @@ router = APIRouter()
 async def run_scraper(
     background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
-    # current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     background_tasks.add_task(scrape_startup_jobs, session)
     return {"message": "Scraping started in background"}
@@ -54,7 +54,7 @@ async def accept(
     job_id: UUID,
     data: AcceptOrRejectJobRequest,
     session: Session = Depends(get_session),
-    # current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     job = session.exec(select(Job).where(Job.id == job_id)).first()
     if not job:
@@ -84,7 +84,7 @@ async def reject(
     job_id: UUID,
     data: AcceptOrRejectJobRequest,
     session: Session = Depends(get_session),
-    # current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     job = session.exec(select(Job).where(Job.id == job_id)).first()
     if not job:
@@ -112,7 +112,7 @@ async def reject(
 @router.get("/jobs", response_model=list[JobRead])
 def list_jobs(
     session: Session = Depends(get_session),
-    # current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     jobs = session.exec(select(Job)).all()
     return jobs
@@ -121,7 +121,7 @@ def list_jobs(
 @router.get("/pending-jobs", response_model=list[JobRead])
 def list_pending_jobs(
     session: Session = Depends(get_session),
-    # current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     statement = (
         select(Job)
