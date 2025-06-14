@@ -95,7 +95,7 @@ export default function HomePage() {
         </Button>
       </DialogWrapper>
 
-      <div className="flex flex-col">
+      <div className="flex flex-col p-[16px] pt-0">
         {!isLoading && sources.length > 0 && (
           <div className="flex items-center h-[48px]">
             <div className="ml-auto">

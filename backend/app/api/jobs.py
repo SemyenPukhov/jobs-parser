@@ -180,16 +180,16 @@ def list_pending_jobs(
         .outerjoin(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
         .where(JobProcessingStatus.job_id == None)
     )
-    
+
     # Добавляем фильтр по source, если он указан
     if source:
         statement = statement.where(Job.source == source)
-    
+
     # Добавляем сортировку
     statement = statement.order_by(desc(Job.parsed_at))
-    
+
     jobs = session.exec(statement).all()
-    
+
     # Получаем все уникальные источники из всех pending jobs (без фильтра по source)
     all_sources_statement = (
         select(Job.source)
@@ -197,8 +197,9 @@ def list_pending_jobs(
         .where(JobProcessingStatus.job_id == None)
         .distinct()
     )
-    available_sources = [source[0] for source in session.exec(all_sources_statement).all()]
-    
+    available_sources = [source for source in session.exec(
+        all_sources_statement).all()]
+
     # Преобразуем Job в PendingJobRead
     pending_jobs = [
         PendingJobRead(
@@ -215,7 +216,7 @@ def list_pending_jobs(
         )
         for job in jobs
     ]
-    
+
     return PendingJobsResponse(
         jobs=pending_jobs,
         available_sources=available_sources
