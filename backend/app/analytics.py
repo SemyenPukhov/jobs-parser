@@ -3,6 +3,9 @@ from typing import Dict, List, Tuple
 from sqlmodel import Session, select
 from .models import JobProcessingStatus, Job, User
 from collections import defaultdict
+from .utils.slack import send_slack_message
+from .logger import logger
+from .db import get_session
 
 
 def get_daily_analytics(db: Session, date: datetime = None) -> str:
@@ -68,4 +71,23 @@ def get_daily_analytics(db: Session, date: datetime = None) -> str:
             
         message += "\n"
     
-    return message 
+    return message
+
+
+async def send_daily_analytics():
+    """Отправляет ежедневную аналитику в Slack"""
+    logger.info("📊 Начинаю формирование ежедневной аналитики")
+    
+    try:
+        session = next(get_session())
+        analytics_message = get_daily_analytics(session)
+        
+        # Отправляем сообщение в Slack
+        await send_slack_message(analytics_message)
+        logger.info("✅ Ежедневная аналитика успешно отправлена")
+    except Exception as e:
+        error_message = f"❌ Ошибка при отправке ежедневной аналитики: {str(e)}"
+        logger.error(error_message)
+        await send_slack_message(error_message)
+    finally:
+        session.close() 

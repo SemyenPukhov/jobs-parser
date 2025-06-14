@@ -7,6 +7,7 @@ from app.parsers.vseti_app import scrape_vseti_app_jobs
 from app.db import get_session
 from app.logger import logger
 from app.utils.slack import send_slack_message, create_parser_status_block
+from app.analytics import send_daily_analytics
 import asyncio
 
 # Создаем планировщик
@@ -70,7 +71,7 @@ def start_scheduler():
     # Настраиваем время запуска (03:00 по Москве)
     moscow_tz = pytz.timezone('Europe/Moscow')
 
-    # Добавляем задачу в планировщик
+    # Добавляем задачу в планировщик для парсеров
     scheduler.add_job(
         run_parsers,
         trigger=CronTrigger(
@@ -80,6 +81,18 @@ def start_scheduler():
         ),
         id='daily_parsers',
         name='Запуск парсеров каждый день в 03:00 по Москве'
+    )
+
+    # Добавляем задачу в планировщик для аналитики
+    scheduler.add_job(
+        send_daily_analytics,
+        trigger=CronTrigger(
+            hour=21,
+            minute=0,
+            timezone=moscow_tz
+        ),
+        id='daily_analytics',
+        name='Отправка ежедневной аналитики в 21:00 по Москве'
     )
 
     # Запускаем планировщик
