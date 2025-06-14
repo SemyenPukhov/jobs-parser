@@ -38,16 +38,25 @@ def get_jobs_collection_analytics(db: Session, date: datetime = None) -> str:
     for job in jobs:
         source_stats[job.source] += 1
 
+    # Get count of unprocessed jobs
+    unprocessed_statement = (
+        select(Job)
+        .outerjoin(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
+        .where(JobProcessingStatus.job_id == None)
+    )
+    unprocessed_count = len(db.exec(unprocessed_statement).all())
+
     # Format the message
     date_str = date.strftime("%d %B %Y")
     message = f"🔎 *Отчет по собранным вакансиям за* {date_str}\n\n"
 
     if not source_stats:
         message += "За сегодня новых вакансий не добавлено. 🥲\n"
-        return message
+    else:
+        for source, count in source_stats.items():
+            message += f"[{source}] - добавили {count}\n"
 
-    for source, count in source_stats.items():
-        message += f"[{source}] - добавили {count}\n"
+    message += f"\nНеобработанных вакансий: {unprocessed_count} ⏳"
 
     return message
 
