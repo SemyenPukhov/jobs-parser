@@ -185,7 +185,24 @@ def list_pending_jobs(
     # Получаем уникальные источники из pending jobs
     available_sources = list(set(job.source for job in jobs))
     
+    # Преобразуем Job в PendingJobRead
+    pending_jobs = [
+        PendingJobRead(
+            id=job.id,
+            title=job.title,
+            url=job.url,
+            source=job.source,
+            description=job.description,
+            company=job.company,
+            company_url=job.company_url,
+            apply_url=job.apply_url,
+            salary=job.salary,
+            parsed_at=job.parsed_at
+        )
+        for job in jobs
+    ]
+    
     return PendingJobsResponse(
-        jobs=jobs,
+        jobs=pending_jobs,
         available_sources=available_sources
     )
