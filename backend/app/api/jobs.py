@@ -4,7 +4,8 @@ from app.parsers.thehub_io import scrape_thehub_jobs
 from app.parsers.vseti_app import scrape_vseti_app_jobs
 from app.utils.slack import send_slack_message
 
-from sqlmodel import Session, select, desc, selectinload
+from sqlmodel import Session, select, desc
+from sqlalchemy.orm import selectinload
 from app.db import get_session
 from app.models import Job, JobProcessingStatus, JobProcessingStatusEnum, JobRead, User
 from app.auth import get_current_user
