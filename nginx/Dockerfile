@@ -21,11 +21,11 @@ RUN npm run build
 FROM nginx:alpine
 
 # Установка утилиты для создания .htpasswd
-RUN apk add --no-cache apache2-utils
+# RUN apk add --no-cache apache2-utils
 
 # Создание пользователя и пароля для базовой аутентификации
 # Замените admin и your_password на нужные значения
-RUN htpasswd -cb /etc/nginx/.htpasswd admin password
+# RUN htpasswd -cb /etc/nginx/.htpasswd admin password
 
 # Копирование конфигурации
 # COPY nginx/conf.d/ /etc/nginx/conf.d/
