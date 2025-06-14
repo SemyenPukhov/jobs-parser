@@ -86,6 +86,7 @@ async def accept(
 
     new_status = JobProcessingStatus(
         job_id=job_id,
+        user_id=current_user.id,
         status=JobProcessingStatusEnum.APPLIED,
         comment=data.comment,
         created_at=datetime.utcnow()
@@ -120,6 +121,7 @@ async def reject(
 
     new_status = JobProcessingStatus(
         job_id=job_id,
+        user_id=current_user.id,
         status=JobProcessingStatusEnum.NOT_SUITABLE,
         comment=data.comment,
         created_at=datetime.utcnow()
