@@ -57,6 +57,11 @@ export default function HomePage() {
       ? jobsResponse.available_sources
       : [];
 
+  const jobs =
+    jobsResponse && jobsResponse.jobs && jobsResponse.jobs.length > 0
+      ? jobsResponse.jobs
+      : [];
+
   const open = Boolean(title);
   const handleOpenChange = (action?: AllowedActions, id?: string) => {
     if (!title && action && id) {
@@ -98,6 +103,9 @@ export default function HomePage() {
       <div className="flex flex-col p-[16px] pt-0">
         {!isLoading && sources.length > 0 && (
           <div className="flex items-center h-[48px]">
+            {jobs.length > 0 && (
+              <h5 className="text-muted-foreground">Необработанных вакансий: {jobs.length}</h5>
+            )}
             <div className="ml-auto">
               <Select onValueChange={(v) => setSource(v)}>
                 <SelectTrigger className="w-[180px]">
@@ -116,22 +124,20 @@ export default function HomePage() {
             </div>
           </div>
         )}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 text-center">
           {isLoading && (
             <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
               Загрузка вакансий
             </h2>
           )}
+          {!isLoading && jobs.length == 0 && (
+            <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
+              Новых нет. Все обработаны 💯
+            </h2>
+          )}
           {!isLoading &&
-            jobsResponse &&
-            jobsResponse.jobs &&
-            jobsResponse.jobs.length == 0 && (
-              <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
-                Новых нет. Все обработаны 💯
-              </h2>
-            )}
-          {!isLoading &&
-            jobsResponse.jobs?.map((j: any) => {
+            jobs.length > 0 &&
+            jobs?.map((j: any) => {
               const daysAgoText =
                 daysAgo(j.parsed_at) > 0
                   ? `${daysAgo(j.parsed_at)} дня назад`
