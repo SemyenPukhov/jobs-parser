@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from app.parsers.startup_jobs import scrape_startup_jobs
 from app.parsers.thehub_io import scrape_thehub_jobs
 from app.parsers.vseti_app import scrape_vseti_app_jobs
+from app.parsers.deb_by import scrape_devby_jobs
 from app.utils.slack import send_slack_message
 
 from sqlmodel import Session, select, desc
@@ -48,11 +49,21 @@ async def run_scraper(
     return {"message": "Scraping started in background"}
 
 
-@router.post("/scrape/thehub-jobs")
+@router.post("/scrape/devby-jobs")
 async def run_scraper(
     background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
     # current_user: User = Depends(get_current_user)
+):
+    background_tasks.add_task(scrape_devby_jobs, session)
+    return {"message": "Scraping started in background"}
+
+
+@router.post("/scrape/thehub-jobs")
+async def run_scraper(
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
 ):
     background_tasks.add_task(scrape_thehub_jobs, session)
     return {"message": "Scraping started in background"}

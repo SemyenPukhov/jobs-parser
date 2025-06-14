@@ -137,12 +137,17 @@ async def fetch_html_browser(url: str, screenshot_path: Optional[str] = None) ->
 async def fetch_html_async(url: str, browser) -> str:
     """Загружает HTML содержимое страницы с помощью переданного браузера."""
     async with browser_semaphore:
+        # Проверяем, что браузер еще не закрыт
+        if browser.is_connected() == False:
+            logger.error(f"❌ Браузер закрыт, не могу загрузить {url}")
+            return ""
+
         page = await browser.new_page()
         try:
             logger.info(f"🌐 Загружаю страницу: {url}")
             await page.goto(url, wait_until="domcontentloaded", timeout=60000)
             await page.wait_for_load_state("networkidle", timeout=10000)
-            await page.wait_for_timeout(1000)  # небольшой запас
+            await page.wait_for_timeout(1000)
             content = await page.content()
         except PlaywrightTimeoutError:
             logger.warning(

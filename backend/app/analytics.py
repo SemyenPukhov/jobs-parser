@@ -35,7 +35,7 @@ def get_daily_analytics(db: Session, date: datetime = None) -> str:
 
     # Format the message
     date_str = date.strftime("%d %B %Y")
-    message = f"🧐 *Аналитика подачь за* {date_str}\n\n"
+    message = f"🧐 *Аналитика подач за* {date_str}\n\n"
 
     if not statuses:
         message += "За сегодня подач и отказов нет. 🥲\n"
@@ -67,7 +67,7 @@ def get_daily_analytics(db: Session, date: datetime = None) -> str:
 
     for manager_email, (applications, rejections) in manager_stats.items():
         message += f"Менеджер {manager_email}\n"
-        message += f"Подачь - {len(applications)}\n"
+        message += f"Подач - {len(applications)}\n"
 
         for url, comment in applications:
             message += f"- {url} - {comment}\n"
