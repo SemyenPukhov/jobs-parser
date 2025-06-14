@@ -11,10 +11,27 @@ from app.auth import get_current_user
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel
+from typing import Optional
 
 
 class AcceptOrRejectJobRequest(BaseModel):
     comment: str
+
+
+class PendingJobRead(BaseModel):
+    id: UUID
+    title: str
+    url: str
+    source: str
+    description: Optional[str]
+    company: Optional[str]
+    company_url: Optional[str]
+    apply_url: Optional[str]
+    salary: Optional[str]
+    parsed_at: datetime
+
+    class Config:
+        orm_mode = True
 
 
 router = APIRouter()
@@ -127,7 +144,7 @@ def list_jobs(
     return jobs
 
 
-@router.get("/pending-jobs", response_model=list[JobRead])
+@router.get("/pending-jobs", response_model=list[PendingJobRead])
 def list_pending_jobs(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
