@@ -13,7 +13,7 @@ from app.auth import get_current_user
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 
 
 class AcceptOrRejectJobRequest(BaseModel):
@@ -34,6 +34,11 @@ class PendingJobRead(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class PendingJobsResponse(BaseModel):
+    jobs: List[PendingJobRead]
+    available_sources: List[str]
 
 
 router = APIRouter()
@@ -163,11 +168,12 @@ def list_jobs(
     return jobs
 
 
-@router.get("/pending-jobs", response_model=list[PendingJobRead])
+@router.get("/pending-jobs", response_model=PendingJobsResponse)
 def list_pending_jobs(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
+    # Получаем все pending jobs
     statement = (
         select(Job)
         .outerjoin(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
@@ -175,4 +181,11 @@ def list_pending_jobs(
         .order_by(desc(Job.parsed_at))
     )
     jobs = session.exec(statement).all()
-    return jobs
+    
+    # Получаем уникальные источники из pending jobs
+    available_sources = list(set(job.source for job in jobs))
+    
+    return PendingJobsResponse(
+        jobs=jobs,
+        available_sources=available_sources
+    )
