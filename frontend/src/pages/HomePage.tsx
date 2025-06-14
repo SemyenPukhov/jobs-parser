@@ -46,9 +46,11 @@ type AllowedActions = "accept" | "reject";
 export default function HomePage() {
   const [title, setTitle] = useState<null | typeof ACCEPT_TEXTS>(null);
   const [comment, setComment] = useState("");
+  const [source, setSource] = useState("");
+
   const [id, setId] = useState<string | null>(null);
 
-  const { data: jobsResponse, isLoading } = usePendingJobs();
+  const { data: jobsResponse, isLoading } = usePendingJobs(source);
   const { mutate: acceptOrRejectJob } = useAcceptOrRejectJob();
   const sources =
     jobsResponse && jobsResponse.available_sources
@@ -97,7 +99,7 @@ export default function HomePage() {
         {!isLoading && sources.length > 0 && (
           <div className="flex items-center h-[48px]">
             <div className="ml-auto">
-              <Select>
+              <Select onValueChange={(v) => setSource(v)}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Ресурс" />
                 </SelectTrigger>

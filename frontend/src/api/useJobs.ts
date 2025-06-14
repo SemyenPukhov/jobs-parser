@@ -13,15 +13,17 @@ export const useJobs = () => {
   });
 };
 
-const fetchPendingJobs = async () => {
-  const { data } = await api.get("/pending-jobs");
+const fetchPendingJobs = async (source?: string) => {
+  const { data } = await api.get("/pending-jobs", {
+    params: source ? { source } : undefined,
+  });
   return data;
 };
 
-export const usePendingJobs = () => {
+export const usePendingJobs = (source?: string) => {
   return useQuery({
-    queryKey: ["pendingJobs"],
-    queryFn: fetchPendingJobs,
+    queryKey: ["pendingJobs", source],
+    queryFn: () => fetchPendingJobs(source),
   });
 };
 

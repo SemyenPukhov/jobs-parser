@@ -190,8 +190,14 @@ def list_pending_jobs(
     
     jobs = session.exec(statement).all()
     
-    # Получаем уникальные источники из pending jobs
-    available_sources = list(set(job.source for job in jobs))
+    # Получаем все уникальные источники из всех pending jobs (без фильтра по source)
+    all_sources_statement = (
+        select(Job.source)
+        .outerjoin(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
+        .where(JobProcessingStatus.job_id == None)
+        .distinct()
+    )
+    available_sources = [source[0] for source in session.exec(all_sources_statement).all()]
     
     # Преобразуем Job в PendingJobRead
     pending_jobs = [
