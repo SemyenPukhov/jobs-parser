@@ -170,16 +170,24 @@ def list_jobs(
 
 @router.get("/pending-jobs", response_model=PendingJobsResponse)
 def list_pending_jobs(
+    source: Optional[str] = None,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    # Получаем все pending jobs
+    # Базовый запрос для pending jobs
     statement = (
         select(Job)
         .outerjoin(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
         .where(JobProcessingStatus.job_id == None)
-        .order_by(desc(Job.parsed_at))
     )
+    
+    # Добавляем фильтр по source, если он указан
+    if source:
+        statement = statement.where(Job.source == source)
+    
+    # Добавляем сортировку
+    statement = statement.order_by(desc(Job.parsed_at))
+    
     jobs = session.exec(statement).all()
     
     # Получаем уникальные источники из pending jobs
