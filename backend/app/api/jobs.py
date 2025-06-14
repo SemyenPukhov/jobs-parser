@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from app.parsers.startup_jobs import scrape_startup_jobs
 from app.parsers.thehub_io import scrape_thehub_jobs
 from app.parsers.vseti_app import scrape_vseti_app_jobs
-from backend.app.parsers.dev_by import scrape_devby_jobs
+from app.parsers.dev_by import scrape_devby_jobs
 from app.utils.slack import send_slack_message
 
 from sqlmodel import Session, select, desc
