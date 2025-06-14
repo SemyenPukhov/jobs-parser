@@ -66,8 +66,8 @@ def run_migrations_online() -> None:
     def include_object(object, name, type_, reflected, compare_to):
         if type_ == "table" and name in {"user"}:
             return False
+        return True
 
-    return True
     connectable = engine
 
     with connectable.connect() as connection:
