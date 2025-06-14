@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import jobs, auth
+from app.api import jobs, auth, analytics
 from app.db import init_db
 from app.scheduler import start_scheduler
 
@@ -18,6 +18,7 @@ app.add_middleware(
 # Include routers
 app.include_router(jobs.router, prefix="/api", tags=["jobs"])
 app.include_router(auth.router, prefix="/api", tags=["auth"])
+app.include_router(analytics.router, prefix="/api", tags=["analytics"])
 
 
 @app.on_event("startup")
