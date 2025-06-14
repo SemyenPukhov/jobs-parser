@@ -28,7 +28,9 @@ RUN apk add --no-cache apache2-utils
 RUN htpasswd -cb /etc/nginx/.htpasswd admin password
 
 # Копирование конфигурации
-COPY nginx/conf.d/ /etc/nginx/conf.d/
+# COPY nginx/conf.d/ /etc/nginx/conf.d/
+COPY nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
+
 
 # Copy built frontend from previous stage
 COPY --from=frontend-builder /app/dist /usr/share/nginx/html
