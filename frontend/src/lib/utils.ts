@@ -16,3 +16,14 @@ export function formatDate(isoDate: string) {
   
   return formatted;
 }
+
+
+export function daysAgo(isoDate: string) {
+  const parsedDate = new Date(isoDate).getTime();
+  const now = new Date().getTime();
+
+  const diffTime = now - parsedDate;
+
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+}
