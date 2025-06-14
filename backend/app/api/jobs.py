@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from app.parsers.startup_jobs import scrape_startup_jobs
 from app.parsers.thehub_io import scrape_thehub_jobs
 from app.parsers.vseti_app import scrape_vseti_app_jobs
+from app.utils.slack import send_slack_message
 
-from sqlmodel import Session, select
+from sqlmodel import Session, select, desc
 from app.db import get_session
 from app.models import Job, JobProcessingStatus, JobProcessingStatusEnum, JobRead, User
 from app.auth import get_current_user
@@ -76,6 +77,10 @@ async def accept(
     session.commit()
     session.refresh(new_status)
 
+    # Отправляем уведомление в Slack
+    message = f"Пользователь {current_user.email} откликнулся на запрос {job.url} и подал: {data.comment}"
+    await send_slack_message(message)
+
     return {"success": True, "status_id": str(new_status.id)}
 
 
@@ -106,6 +111,10 @@ async def reject(
     session.commit()
     session.refresh(new_status)
 
+    # Отправляем уведомление в Slack
+    message = f"Пользователь {current_user.email} отклонил запрос {job.url} по причине: {data.comment}"
+    await send_slack_message(message)
+
     return {"success": True, "status_id": str(new_status.id)}
 
 
@@ -127,6 +136,7 @@ def list_pending_jobs(
         select(Job)
         .outerjoin(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
         .where(JobProcessingStatus.job_id == None)
+        .order_by(desc(Job.parsed_at))
     )
     jobs = session.exec(statement).all()
     return jobs
