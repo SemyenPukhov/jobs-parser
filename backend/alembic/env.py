@@ -48,6 +48,8 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
+        compare_server_default=True,
     )
 
     with context.begin_transaction():
@@ -61,11 +63,18 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    def include_object(object, name, type_, reflected, compare_to):
+        if type_ == "table" and name in {"user"}:
+            return False
+
+    return True
     connectable = engine
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            include_object=include_object,
+            connection=connection, target_metadata=target_metadata, compare_type=True,
+            compare_server_default=True,
         )
 
         with context.begin_transaction():

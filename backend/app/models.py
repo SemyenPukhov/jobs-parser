@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 import uuid
 from uuid import UUID
@@ -15,11 +15,13 @@ class JobProcessingStatusEnum(str, Enum):
 class JobProcessingStatus(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     job_id: UUID = Field(foreign_key="job.id", unique=True, nullable=False)
+    user_id: UUID = Field(foreign_key="user.id", nullable=False)
     status: JobProcessingStatusEnum
     comment: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     job: Optional["Job"] = Relationship(back_populates="processing_status")
+    user: Optional["User"] = Relationship(back_populates="processed_jobs")
 
 
 class Job(SQLModel, table=True):
@@ -69,6 +71,8 @@ class User(SQLModel, table=True):
     email: EmailStr = Field(unique=True, index=True)
     hashed_password: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    processed_jobs: List[JobProcessingStatus] = Relationship(back_populates="user")
 
 
 class UserCreate(BaseModel):
