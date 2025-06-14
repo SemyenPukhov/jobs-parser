@@ -23,6 +23,20 @@ services:
           cpus: '0.50'
           memory: 512M
 
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.10'
+          memory: 128M
+
   migrate:
     build:
       context: ./backend

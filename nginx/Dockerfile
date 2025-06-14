@@ -20,10 +20,20 @@ RUN npm run build
 # Stage 2: Nginx
 FROM nginx:alpine
 
-# Copy nginx config
-COPY nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
+# Установка утилиты для создания .htpasswd
+RUN apk add --no-cache apache2-utils
+
+# Создание пользователя и пароля для базовой аутентификации
+# Замените admin и your_password на нужные значения
+RUN htpasswd -cb /etc/nginx/.htpasswd admin password
+
+# Копирование конфигурации
+COPY nginx/conf.d/ /etc/nginx/conf.d/
 
 # Copy built frontend from previous stage
 COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 
 EXPOSE 80
+
+# Запуск nginx
+# CMD ["nginx", "-g", "daemon off;"]
