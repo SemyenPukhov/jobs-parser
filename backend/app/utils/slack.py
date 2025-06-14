@@ -16,7 +16,7 @@ else:
     client = WebClient(token=slack_token)
 
 
-async def send_slack_message(message: str, blocks: list = None) -> bool:
+async def send_slack_message(message: str) -> bool:
     """
     Отправляет сообщение в Slack канал.
 
@@ -34,17 +34,20 @@ async def send_slack_message(message: str, blocks: list = None) -> bool:
 
     try:
         # Добавляем префикс окружения к сообщению
-        prefixed_message = f"[{settings.ENVIRONMENT}] {message}"
+        prefixed_message = f"[{settings.ENVIRONMENT.upper()}] {message}"
 
         # Если есть блоки, добавляем префикс к тексту в первом блоке
-        if blocks and len(blocks) > 0 and blocks[0].get("type") == "section":
-            if "text" in blocks[0] and "text" in blocks[0]["text"]:
-                blocks[0]["text"]["text"] = f"[{settings.ENVIRONMENT.upper()}] {blocks[0]['text']['text']}"
+        # if blocks and len(blocks) > 0 and blocks[0].get("type") == "section":
+        #     if "text" in blocks[0] and "text" in blocks[0]["text"]:
+        #         blocks[0]["text"]["text"] = f"[{settings.ENVIRONMENT.upper()}] {blocks[0]['text']['text']}"
 
         response = client.chat_postMessage(
             channel=slack_channel,
             text=prefixed_message,  # Оставляем простой текст для уведомлений
-            blocks=blocks
+            # blocks=blocks,
+            icon_emoji=":robot_face:",
+            username="Алерт бот",
+            mrkdwn=True
         )
         return response["ok"]
     except SlackApiError as e:
