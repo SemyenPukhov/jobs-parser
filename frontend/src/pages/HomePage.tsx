@@ -16,7 +16,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { formatDate } from "@/lib/utils";
+import { formatDate, daysAgo } from "@/lib/utils";
 import { Dismiss28Regular, Checkmark28Regular } from "@fluentui/react-icons";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
@@ -93,6 +93,10 @@ export default function HomePage() {
         )}
         {!isLoading &&
           jobs?.map((j: any) => {
+            const daysAgoText =
+              daysAgo(j.parsed_at) > 0
+                ? `${daysAgo(j.parsed_at)} дня назад`
+                : "Сегодня";
             return (
               <Card key={j.id}>
                 <CardHeader>
@@ -107,7 +111,7 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col gap-2">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between gap-2">
                       <h3 className="font-bold">{j.title}</h3>
                       <a href={j.url} target="_blank">
                         Ссылка на вакансию
@@ -151,7 +155,7 @@ export default function HomePage() {
                     </div>
                   </CardAction>
                   <CardDescription className="flex gap-2 ml-auto">
-                    Спарсили: {formatDate(j.parsed_at)}
+                    Спарсили: {formatDate(j.parsed_at)} ({daysAgoText})
                   </CardDescription>
                 </CardFooter>
               </Card>

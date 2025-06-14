@@ -8,6 +8,50 @@ from .logger import logger
 from .db import get_session
 
 
+def get_jobs_collection_analytics(db: Session, date: datetime = None) -> str:
+    """
+    Generate analytics of collected jobs per source for the day.
+
+    Args:
+        db: Database session
+        date: Date to generate analytics for (defaults to current date)
+
+    Returns:
+        str: Formatted analytics message
+    """
+    if date is None:
+        date = datetime.utcnow()
+
+    # Get start and end of the day
+    start_of_day = datetime(date.year, date.month, date.day, 0, 0, 0)
+    end_of_day = datetime(date.year, date.month, date.day, 23, 59, 59)
+
+    # Query all jobs created for the day
+    statement = select(Job).where(
+        Job.created_at >= start_of_day,
+        Job.created_at <= end_of_day
+    )
+    jobs = db.exec(statement).all()
+
+    # Group by source
+    source_stats = defaultdict(int)
+    for job in jobs:
+        source_stats[job.source] += 1
+
+    # Format the message
+    date_str = date.strftime("%d %B %Y")
+    message = f"🔎 *Отчет по собранным вакансиям за* {date_str}\n\n"
+
+    if not source_stats:
+        message += "За сегодня новых вакансий не добавлено. 🥲\n"
+        return message
+
+    for source, count in source_stats.items():
+        message += f"[{source}] - добавили {count}\n"
+
+    return message
+
+
 def get_daily_analytics(db: Session, date: datetime = None) -> str:
     """
     Generate daily analytics of job applications and rejections per manager.
@@ -87,10 +131,16 @@ async def send_daily_analytics():
 
     try:
         session = next(get_session())
-        analytics_message = get_daily_analytics(session)
+
+        # Получаем оба отчета
+        jobs_analytics = get_jobs_collection_analytics(session)
+        applications_analytics = get_daily_analytics(session)
+
+        # Объединяем отчеты
+        full_message = f"{jobs_analytics}\n\n{applications_analytics}"
 
         # Отправляем сообщение в Slack
-        await send_slack_message(analytics_message)
+        await send_slack_message(full_message)
         logger.info("✅ Ежедневная аналитика успешно отправлена")
     except Exception as e:
         error_message = f"❌ Ошибка при отправке ежедневной аналитики: {str(e)}"
