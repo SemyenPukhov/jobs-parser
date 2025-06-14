@@ -4,7 +4,7 @@ from app.parsers.thehub_io import scrape_thehub_jobs
 from app.parsers.vseti_app import scrape_vseti_app_jobs
 from app.utils.slack import send_slack_message
 
-from sqlmodel import Session, select, desc
+from sqlmodel import Session, select, desc, selectinload
 from app.db import get_session
 from app.models import Job, JobProcessingStatus, JobProcessingStatusEnum, JobRead, User
 from app.auth import get_current_user
@@ -142,7 +142,12 @@ def list_jobs(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    jobs = session.exec(select(Job)).all()
+    statement = (
+        select(Job)
+        .outerjoin(JobProcessingStatus)
+        .options(selectinload(Job.processing_status))
+    )
+    jobs = session.exec(statement).all()
     return jobs
 
 
