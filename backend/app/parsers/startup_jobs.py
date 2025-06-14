@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from app.utils.browser import fetch_html_browser
 from typing import Any, Dict, List
 from app.logger import logger
+from app.utils.slack import send_slack_message
 from functools import lru_cache
 import time
 import uuid
@@ -130,7 +131,7 @@ async def process_job_div(job_div: ResultSet[Any]) -> Dict | None:
         return None
 
 
-async def parse_jobs_from_html(html: str) -> List[Job]:
+async def parse_jobs_from_html(html: str, stats: Dict[str, Any]) -> List[Job]:
     """Парсинг вакансий из HTML"""
     try:
         soup = BeautifulSoup(html, "html.parser")
@@ -141,6 +142,7 @@ async def parse_jobs_from_html(html: str) -> List[Job]:
 
         job_rows = hits_div.find_all("div", class_="isolate")
         logger.info(f"📊 Найдено {len(job_rows)} вакансий")
+        stats["successfully_parsed"] += len(job_rows)
 
         # Обрабатываем вакансии с ограничением одновременных запросов
         parsed_jobs = await asyncio.gather(
@@ -177,11 +179,18 @@ async def scrape_startup_jobs(session: Session):
     start_time = time.time()
     all_jobs = []
 
+    # Статистика для отчета
+    stats = {
+        "total_found": 0,
+        "successfully_parsed": 0,
+        "added_to_db": 0,
+        "duplicates_skipped": 0
+    }
+
     try:
-        screenshot_uuid = str(uuid.uuid4())[:8]
+        # screenshot_uuid = str(uuid.uuid4())[:8]
         # Получаем HTML со всех URL с ограничением одновременных запросов
-        tasks = [fetch_html_browser(
-            url, f"startup_jobs_{screenshot_uuid}.png") for url in URLS]
+        tasks = [fetch_html_browser(url) for url in URLS]
         html_results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Обрабатываем результаты
@@ -190,7 +199,8 @@ async def scrape_startup_jobs(session: Session):
                 logger.error(f"❌ Ошибка при получении HTML: {str(html)}")
                 continue
 
-            jobs = await parse_jobs_from_html(html)
+            jobs = await parse_jobs_from_html(html, stats)
+            stats["total_found"] += len(jobs)
 
             # Проверяем дубликаты и сохраняем новые вакансии
             for job in jobs:
@@ -201,18 +211,35 @@ async def scrape_startup_jobs(session: Session):
                     logger.info(f"📊 Сохраняю в БД {job.url}")
                     session.add(job)
                     all_jobs.append(job)
+                    stats["added_to_db"] += 1
                 else:
                     logger.info(f"⚠️ Пропускаю дубликат {job.url}")
+                    stats["duplicates_skipped"] += 1
 
         # Сохраняем все изменения одним коммитом
         if all_jobs:
             session.commit()
 
         end_time = time.time()
+        duration = end_time - start_time
+
+        # Формируем и отправляем отчет в Slack
+        report = (
+            f"Сводка по парсингу {SOURCE}:\n"
+            f"Всего найдено запросов по запрос: {stats['total_found']}\n"
+            f"Успешно спарсили: {stats['successfully_parsed']}\n"
+            f"Добавили в БД: {stats['added_to_db']}\n"
+            f"Пропустили дубликатов: {stats['duplicates_skipped']}\n"
+            f"Время выполнения: {duration:.2f} секунд"
+        )
+        await send_slack_message(report)
+
         logger.info(
-            f"✅ Скрапинг завершен за {end_time - start_time:.2f} секунд. Добавлено {len(all_jobs)} вакансий")
+            f"✅ Скрапинг завершен за {duration:.2f} секунд. Добавлено {len(all_jobs)} вакансий")
 
         return all_jobs
     except Exception as e:
-        logger.error(f"❌ Критическая ошибка при скрапинге: {str(e)}")
+        error_message = f"❌ Критическая ошибка при скрапинге: {str(e)}"
+        logger.error(error_message)
+        await send_slack_message(f"❌ Ошибка при парсинге {SOURCE}:\n{str(e)}")
         return []

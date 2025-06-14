@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from app.utils.browser import fetch_html_browser, get_browser_page, fetch_html_async
 from typing import Any, Dict, List, Optional
 from app.logger import logger
+from app.utils.slack import send_slack_message
 from functools import lru_cache
 from playwright.async_api import async_playwright,  TimeoutError as PlaywrightTimeoutError
 
@@ -144,6 +145,14 @@ async def scrape_vseti_app_jobs(session: Session):
     start_time = time.time()
     all_jobs = []
 
+    # Статистика для отчета
+    stats = {
+        "total_found": 0,
+        "successfully_parsed": 0,
+        "added_to_db": 0,
+        "duplicates_skipped": 0
+    }
+
     try:
         # Получаем HTML страниц
         tasks = [get_full_jobs_page(url) for url in URLS]
@@ -181,12 +190,12 @@ async def scrape_vseti_app_jobs(session: Session):
             logger.warning("⚠️ Не найдено ни одной вакансии")
             return []
 
+        stats["total_found"] = len(jobs)
         logger.info(
             f"📊 Всего найдено {len(jobs)} вакансий для детального парсинга")
 
         # Получаем детальную информацию о вакансиях
         async with async_playwright() as p:
-            # Используем headless для прода
             browser = await p.chromium.launch(headless=True)
 
             all_results = await asyncio.gather(*[
@@ -203,6 +212,7 @@ async def scrape_vseti_app_jobs(session: Session):
             elif result is not None:
                 valid_jobs.append(result)
 
+        stats["successfully_parsed"] = len(valid_jobs)
         logger.info(f"📊 Успешно обработано {len(valid_jobs)} вакансий")
 
         # Сохраняем в базу данных
@@ -222,8 +232,10 @@ async def scrape_vseti_app_jobs(session: Session):
                     )
                     session.add(job)
                     all_jobs.append(job)
+                    stats["added_to_db"] += 1
                     logger.info(f"✅ Сохранено: {job_info['title']}")
                 else:
+                    stats["duplicates_skipped"] += 1
                     logger.info(f"⚠️ Пропущено (дубликат): {existing.title}")
             except Exception as e:
                 logger.error(
@@ -239,10 +251,25 @@ async def scrape_vseti_app_jobs(session: Session):
                 session.rollback()
 
         end_time = time.time()
+        duration = end_time - start_time
+
+        # Формируем и отправляем отчет в Slack
+        report = (
+            f"📊 Сводка по парсингу {SOURCE}:\n"
+            f"Всего найдено запросов по запрос: {stats['total_found']}\n"
+            f"Успешно спарсили: {stats['successfully_parsed']}\n"
+            f"Добавили в БД: {stats['added_to_db']}\n"
+            f"Пропустили дубликатов: {stats['duplicates_skipped']}\n"
+            f"Время выполнения: {duration:.2f} секунд"
+        )
+        await send_slack_message(report)
+
         logger.info(
-            f"✅ Скрапинг завершен за {end_time - start_time:.2f} секунд. Добавлено {len(all_jobs)} вакансий")
+            f"✅ Скрапинг завершен за {duration:.2f} секунд. Добавлено {len(all_jobs)} вакансий")
 
         return all_jobs
     except Exception as e:
-        logger.error(f"❌ Критическая ошибка при скрапинге: {str(e)}")
+        error_message = f"❌ Критическая ошибка при скрапинге: {str(e)}"
+        logger.error(error_message)
+        await send_slack_message(f"❌ Ошибка при парсинге {SOURCE}:\n{str(e)}")
         return []

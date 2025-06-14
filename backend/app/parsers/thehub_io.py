@@ -5,8 +5,12 @@ from sqlmodel import select, Session
 from datetime import datetime
 from app.utils.browser import fetch_html_async
 from app.logger import logger
+from app.utils.slack import send_slack_message
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from playwright.async_api import async_playwright,  TimeoutError as PlaywrightTimeoutError
+import time
+from typing import Dict, Any
+
 sem = asyncio.Semaphore(10)
 
 URLS = [
@@ -17,9 +21,9 @@ SOURCE = "thehub.io"
 base_url = "https://thehub.io"
 
 
-async def process_page_throttled(url: str, browser):
+async def process_page_throttled(url: str, browser, stats: Dict[str, Any]):
     async with sem:
-        return await process_page(url, browser)
+        return await process_page(url, browser, stats)
 
 
 def update_url_param(url: str, key: str, value: str) -> str:
@@ -97,7 +101,7 @@ async def process_job(job_div: ResultSet, browser) -> dict[str, str] | None:
     }
 
 
-async def process_page(url: str, browser) -> list[dict[str, str]]:
+async def process_page(url: str, browser, stats: Dict[str, Any]) -> list[dict[str, str]]:
     page_html = await fetch_html_async(url, browser)
     soup = BeautifulSoup(page_html, "html.parser")
     content_tags = soup.find_all('content')
@@ -106,6 +110,7 @@ async def process_page(url: str, browser) -> list[dict[str, str]]:
 
     jobs_content = content_tags[-1]
     job_rows = jobs_content.find_all('div', recursive=False)
+    stats["total_found"] += len(job_rows)
 
     return await asyncio.gather(*[
         process_job(job_row, browser)
@@ -115,39 +120,74 @@ async def process_page(url: str, browser) -> list[dict[str, str]]:
 
 async def scrape_thehub_jobs(session: Session):
     all_jobs = []
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+    start_time = time.time()
 
-        urls_nested = await asyncio.gather(*[
-            get_paginated_urls(url, browser) for url in URLS
-        ])
-        urls = [u for group in urls_nested for u in group]
+    # Статистика для отчета
+    stats = {
+        "total_found": 0,
+        "successfully_parsed": 0,
+        "added_to_db": 0,
+        "duplicates_skipped": 0
+    }
 
-        all_results = await asyncio.gather(*[
-            process_page_throttled(url, browser) for url in urls
-        ])
-        flat_results = [job for group in all_results for job in group if job]
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
 
-        for job_info in flat_results:
-            existing = session.exec(
-                select(Job).where(Job.url == job_info["url"])).first()
-            if not existing:
-                job = Job(
-                    title=job_info["title"],
-                    url=job_info["url"],
-                    description=job_info["description"],
-                    source=SOURCE,
-                    parsed_at=datetime.utcnow(),
-                    company_url=job_info["company_url"],
-                    company=job_info["company"]
-                )
-                session.add(job)
-                all_jobs.append(job)
-                logger.info(f"✅ Сохранено: {job_info['title']}")
-            else:
-                logger.info(f"⚠️ Пропущено (дубликат): {existing.title}")
+            urls_nested = await asyncio.gather(*[
+                get_paginated_urls(url, browser) for url in URLS
+            ])
+            urls = [u for group in urls_nested for u in group]
 
-        session.commit()
-        await browser.close()
+            all_results = await asyncio.gather(*[
+                process_page_throttled(url, browser, stats) for url in urls
+            ])
+            flat_results = [
+                job for group in all_results for job in group if job]
 
-    return all_jobs
+            stats["successfully_parsed"] = len(flat_results)
+
+            for job_info in flat_results:
+                existing = session.exec(
+                    select(Job).where(Job.url == job_info["url"])).first()
+                if not existing:
+                    job = Job(
+                        title=job_info["title"],
+                        url=job_info["url"],
+                        description=job_info["description"],
+                        source=SOURCE,
+                        parsed_at=datetime.utcnow(),
+                        company_url=job_info["company_url"],
+                        company=job_info["company"]
+                    )
+                    session.add(job)
+                    all_jobs.append(job)
+                    stats["added_to_db"] += 1
+                    logger.info(f"✅ Сохранено: {job_info['title']}")
+                else:
+                    stats["duplicates_skipped"] += 1
+                    logger.info(f"⚠️ Пропущено (дубликат): {existing.title}")
+
+            session.commit()
+            await browser.close()
+
+        end_time = time.time()
+        duration = end_time - start_time
+
+        # Формируем и отправляем отчет в Slack
+        report = (
+            f"📊 Сводка по парсингу {SOURCE}:\n"
+            f"Всего найдено запросов по запрос: {stats['total_found']}\n"
+            f"Успешно спарсили: {stats['successfully_parsed']}\n"
+            f"Добавили в БД: {stats['added_to_db']}\n"
+            f"Пропустили дубликатов: {stats['duplicates_skipped']}\n"
+            f"Время выполнения: {duration:.2f} секунд"
+        )
+        await send_slack_message(report)
+
+        return all_jobs
+    except Exception as e:
+        error_message = f"❌ Критическая ошибка при скрапинге: {str(e)}"
+        logger.error(error_message)
+        await send_slack_message(f"❌ Ошибка при парсинге {SOURCE}:\n{str(e)}")
+        return []
