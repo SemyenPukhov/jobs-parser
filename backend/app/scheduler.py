@@ -4,9 +4,11 @@ import pytz
 from app.parsers.startup_jobs import scrape_startup_jobs
 from app.parsers.thehub_io import scrape_thehub_jobs
 from app.parsers.vseti_app import scrape_vseti_app_jobs
+from app.parsers.dev_by import scrape_devby_jobs
+
 from app.db import get_session
 from app.logger import logger
-from app.utils.slack import send_slack_message, create_parser_status_block
+from app.utils.slack import send_slack_message
 from app.analytics import send_daily_analytics
 import asyncio
 
@@ -25,35 +27,38 @@ async def run_parsers():
         # Запускаем парсеры последовательно
         logger.info("📊 Запускаю startup.jobs парсер")
         await send_slack_message(
-            "Запуск парсера startup.jobs",
-            blocks=create_parser_status_block("startup.jobs", "in_progress")
+            "Запуск парсера startup.jobs 🔨"
         )
         await scrape_startup_jobs(session)
         await send_slack_message(
-            "Парсер startup.jobs завершил работу",
-            blocks=create_parser_status_block("startup.jobs", "success")
+            "Парсер startup.jobs завершил работу ✅",
         )
 
         logger.info("📊 Запускаю thehub.io парсер")
         await send_slack_message(
-            "Запуск парсера thehub.io",
-            blocks=create_parser_status_block("thehub.io", "in_progress")
+            "Запуск парсера thehub.io 🔨",
         )
         await scrape_thehub_jobs(session)
         await send_slack_message(
-            "Парсер thehub.io завершил работу",
-            blocks=create_parser_status_block("thehub.io", "success")
+            "Парсер thehub.io завершил работу ✅",
         )
 
         logger.info("📊 Запускаю vseti.app парсер")
         await send_slack_message(
-            "Запуск парсера vseti.app",
-            blocks=create_parser_status_block("vseti.app", "in_progress")
+            "Запуск парсера vseti.app 🔨",
         )
         await scrape_vseti_app_jobs(session)
         await send_slack_message(
-            "Парсер vseti.app завершил работу",
-            blocks=create_parser_status_block("vseti.app", "success")
+            "Парсер vseti.app завершил работу ✅",
+        )
+
+        logger.info("📊 Запускаю devby.jobs парсер")
+        await send_slack_message(
+            "Запуск парсера devby.jobs 🔨"
+        )
+        await scrape_devby_jobs(session)
+        await send_slack_message(
+            "Парсер vseti.app завершил работу ✅"
         )
 
         logger.info("✅ Все парсеры успешно завершили работу")
