@@ -26,10 +26,10 @@ def get_jobs_collection_analytics(db: Session, date: datetime = None) -> str:
     start_of_day = datetime(date.year, date.month, date.day, 0, 0, 0)
     end_of_day = datetime(date.year, date.month, date.day, 23, 59, 59)
 
-    # Query all jobs created for the day
+    # Query all jobs parsed for the day
     statement = select(Job).where(
-        Job.created_at >= start_of_day,
-        Job.created_at <= end_of_day
+        Job.parsed_at >= start_of_day,
+        Job.parsed_at <= end_of_day
     )
     jobs = db.exec(statement).all()
 
