@@ -101,29 +101,29 @@ export default function HomePage() {
       </DialogWrapper>
 
       <div className="flex flex-col p-[16px] pt-0">
-        {!isLoading && sources.length > 0 && (
-          <div className="flex items-center h-[48px]">
-            {jobs.length > 0 && (
-              <h5 className="text-muted-foreground">Необработанных вакансий: {jobs.length}</h5>
-            )}
-            <div className="ml-auto">
-              <Select onValueChange={(v) => setSource(v)}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Ресурс" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sources.map((s: string) => {
-                    return (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="flex items-center h-[48px]">
+          {jobs.length > 0 && (
+            <h5 className="text-muted-foreground">
+              Необработанных вакансий: {jobs.length}
+            </h5>
+          )}
+          <div className="ml-auto">
+            <Select onValueChange={(v) => setSource(v)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Ресурс" />
+              </SelectTrigger>
+              <SelectContent>
+                {sources.map((s: string) => {
+                  return (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
           </div>
-        )}
+        </div>
         <div className="flex flex-col gap-2 text-center">
           {isLoading && (
             <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
