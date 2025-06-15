@@ -162,7 +162,7 @@ async def scrape_devby_jobs(session: Session) -> List[Dict[str, Any]]:
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
-            headless=False,
+            headless=True,
             # Дополнительные аргументы для стабильности
             args=['--no-sandbox', '--disable-dev-shm-usage']
         )
