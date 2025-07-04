@@ -5,6 +5,8 @@ from app.parsers.startup_jobs import scrape_startup_jobs
 from app.parsers.thehub_io import scrape_thehub_jobs
 from app.parsers.vseti_app import scrape_vseti_app_jobs
 from app.parsers.dev_by import scrape_devby_jobs
+from app.parsers.justremote_co import scrape_justremote_jobs
+
 
 from app.db import get_session
 from app.logger import logger
@@ -59,6 +61,15 @@ async def run_parsers():
         await scrape_devby_jobs(session)
         await send_slack_message(
             "Парсер vseti.app завершил работу ✅"
+        )
+
+        logger.info("📊 Запускаю justremote.co парсер")
+        await send_slack_message(
+            "Запуск парсера justremote.co 🔨"
+        )
+        await scrape_justremote_jobs(session)
+        await send_slack_message(
+            "Парсер justremote.co завершил работу ✅"
         )
 
         logger.info("✅ Все парсеры успешно завершили работу")

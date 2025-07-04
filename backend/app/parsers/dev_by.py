@@ -147,7 +147,6 @@ async def get_jobs_details_from_page(url: str, browser) -> Optional[List[Dict[st
 async def scrape_devby_jobs(session: Session) -> List[Dict[str, Any]]:
     """Основная функция скрапинга с улучшенной обработкой ошибок и семафором"""
     start_time = time.time()
-    all_jobs = []
 
     stats = {
         "total_found": 0,

@@ -9,7 +9,6 @@ from app.logger import logger
 from app.utils.slack import send_slack_message
 from functools import lru_cache
 import time
-import uuid
 
 # Уменьшаем количество одновременных запросов
 sem = asyncio.Semaphore(3)

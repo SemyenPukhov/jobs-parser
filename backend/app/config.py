@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     SLACK_BOT_TOKEN: str | None = os.getenv("SLACK_BOT_TOKEN")
     SLACK_CHANNEL_ID: str | None = os.getenv("SLACK_CHANNEL_ID")
 
+    # just remote
+    JUST_REMOTE_LOGIN: str = os.getenv("JUST_REMOTE_LOGIN")
+    JUST_REMOTE_PWD: str = os.getenv("JUST_REMOTE_PWD")
     # JWT
     # JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key")
     # JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
