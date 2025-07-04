@@ -59,6 +59,8 @@ jobs:
             VITE_API_URL=http://${{ secrets.SSH_HOST }}
             SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}
             SLACK_CHANNEL_ID=${{ secrets.SLACK_CHANNEL_ID }}
+            JUST_REMOTE_LOGIN=${{ secrets.JUST_REMOTE_LOGIN }}
+            JUST_REMOTE_PWD=${{ secrets.JUST_REMOTE_PWD }}
             ENVIRONMENT=prod
             EOL
 
