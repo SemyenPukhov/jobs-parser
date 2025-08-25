@@ -130,10 +130,17 @@ async def scrape_justremote_jobs(session: Session):
         "errors": 0
     }
 
+    proxy = {
+        "server": f"socks5://{settings.SOCKS5_HOST}:1080",
+        "username": settings.SOCKS5_USER,
+        "password": settings.SOCKS5_PASSWORD,
+    }
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(
             headless=True,
-            args=['--no-sandbox', '--disable-dev-shm-usage']
+            args=['--no-sandbox', '--disable-dev-shm-usage'],
+            proxy=proxy
         )
         page = await login(browser)
         job_links = await get_fresh_job_rows(page)
