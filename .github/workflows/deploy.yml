@@ -61,6 +61,9 @@ jobs:
             SLACK_CHANNEL_ID=${{ secrets.SLACK_CHANNEL_ID }}
             JUST_REMOTE_LOGIN=${{ secrets.JUST_REMOTE_LOGIN }}
             JUST_REMOTE_PWD=${{ secrets.JUST_REMOTE_PWD }}
+            SOCKS5_USER=${{ secrets.SOCKS5_USER }}
+            SOCKS5_PASSWORD=${{ secrets.SOCKS5_PASSWORD }}
+            SOCKS5_HOST=${{ secrets.SOCKS5_HOST }}
             ENVIRONMENT=prod
             EOL
 
