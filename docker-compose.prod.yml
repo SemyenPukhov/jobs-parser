@@ -20,7 +20,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.50'
+          cpus: "0.50"
           memory: 512M
 
   adminer:
@@ -34,7 +34,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.10'
+          cpus: "0.10"
           memory: 128M
 
   migrate:
@@ -53,9 +53,9 @@ services:
       SLACK_CHANNEL_ID: ${SLACK_CHANNEL_ID}
       JUST_REMOTE_LOGIN: ${JUST_REMOTE_LOGIN}
       JUST_REMOTE_PWD: ${JUST_REMOTE_PWD}
-      SOCKS5_USER: ${SOCKS5_USER}
-      SOCKS5_PASSWORD: ${SOCKS5_PASSWORD}
-      SOCKS5_HOST: ${SOCKS5_HOST}
+      PROXY_USER: ${PROXY_USER}
+      PROXY_PASS: ${PROXY_PASS}
+      PROXY_HOST: ${PROXY_HOST}
       ENVIRONMENT: ${ENVIRONMENT}
     depends_on:
       db:
@@ -81,16 +81,16 @@ services:
       SLACK_CHANNEL_ID: ${SLACK_CHANNEL_ID}
       JUST_REMOTE_LOGIN: ${JUST_REMOTE_LOGIN}
       JUST_REMOTE_PWD: ${JUST_REMOTE_PWD}
-      SOCKS5_USER: ${SOCKS5_USER}
-      SOCKS5_PASSWORD: ${SOCKS5_PASSWORD}
-      SOCKS5_HOST: ${SOCKS5_HOST}
+      PROXY_USER: ${PROXY_USER}
+      PROXY_PASS: ${PROXY_PASS}
+      PROXY_HOST: ${PROXY_HOST}
       ENVIRONMENT: ${ENVIRONMENT}
     networks:
       - app-network
     deploy:
       resources:
         limits:
-          cpus: '0.50'
+          cpus: "0.50"
           memory: 512M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
@@ -104,10 +104,10 @@ services:
       context: .
       dockerfile: nginx/Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL}  
+        VITE_API_URL: ${VITE_API_URL}
     restart: unless-stopped
     ports:
-      - "80:80"  # лучше не 80, чтобы не было конфликта
+      - "80:80" # лучше не 80, чтобы не было конфликта
     depends_on:
       - backend
     networks:
@@ -115,7 +115,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.30'
+          cpus: "0.30"
           memory: 256M
 
 networks:

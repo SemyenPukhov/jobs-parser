@@ -2,18 +2,52 @@ from sqlmodel import select, Session
 import time
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError, Browser, Page
 from app.config import settings
-from datetime import datetime
+from datetime import datetime, date, timedelta, timezone
 from bs4 import BeautifulSoup, ResultSet
 import asyncio
 from app.logger import logger
 from app.utils.slack import send_slack_message
 from app.models import Job
+import re
+from sqlalchemy import func
+
 
 LOGIN_URL = "https://justremote.co/a/sign-in"
 SOURCE = "justremote.co"
 
 MAX_CONCURRENT_TABS = 5
 sem = asyncio.Semaphore(MAX_CONCURRENT_TABS)
+
+def _parse_site_date(text: str, today: date) -> date | None:
+    """
+    Преобразует строки вида '26th Aug' (или '26 Aug' / '26 August') в date.
+    Без года — подставляем текущий; если дата получилась в будущем, откатываем на прошлый год.
+    Дополнительно обрабатываем 'Today' / 'Yesterday'.
+    """
+    s = text.strip()
+    low = s.lower()
+    if low == "today":
+        return today
+    if low == "yesterday":
+        return today - timedelta(days=1)
+
+    # убрать порядковые суффиксы: st/nd/rd/th
+    s = re.sub(r'(\d{1,2})(st|nd|rd|th)', r'\1', s, flags=re.IGNORECASE)
+
+    dt = None
+    for fmt in ("%d %b", "%d %B"):  # Aug / August
+        try:
+            dt = datetime.strptime(s, fmt)
+            break
+        except ValueError:
+            continue
+    if dt is None:
+        return None
+
+    candidate = date(today.year, dt.month, dt.day)
+    if candidate > today:
+        candidate = date(today.year - 1, dt.month, dt.day)
+    return candidate
 
 
 def get_today_formatted_date():
@@ -37,17 +71,17 @@ async def login(browser: Browser) -> Page:
     await page.locator('input[type="password"]').fill(settings.JUST_REMOTE_PWD)
     await page.locator('form button').click()
 
-    await page.wait_for_load_state("networkidle")
+    await page.wait_for_load_state("domcontentloaded")
 
     # await page.locator('div[class*="power-search-category-filter__Option"]:has-text("Developer")').click()
     await page.locator('//div[contains(@class, "power-search-category-filter__Option") and contains(text(), "Developer")]').click()
-    await page.wait_for_load_state("networkidle")
+    await page.wait_for_load_state("domcontentloaded")
     await page.wait_for_selector("div.infinite-scroll-component")
 
     return page
 
 
-async def get_fresh_job_rows(page: Page):
+async def get_fresh_job_rows(page: "Page", session: "Session"):
     page_html = await page.content()
     soup = BeautifulSoup(page_html, "html.parser")
 
@@ -55,17 +89,28 @@ async def get_fresh_job_rows(page: Page):
     if not container:
         return []
 
-    today = get_today_formatted_date()
+    # последний parsed_at ИМЕННО по этому источнику
+    result = session.exec(
+        select(func.max(Job.parsed_at)).where(Job.source == SOURCE)
+    ).one()
+    last_parsed_at = result  # None | datetime
+    last_parsed_date = last_parsed_at.date() if last_parsed_at else None
+
+    today = datetime.now(timezone.utc).date()
     matching_links = []
 
     for child in container.find_all("a", recursive=False):
-        date_p = child.find("p", class_=lambda x: x and x.startswith(
-            "power-search-job-item__Date"))
+        date_p = child.find("p", class_=lambda x: x and x.startswith("power-search-job-item__Date"))
         if not date_p:
             continue
 
-        text = date_p.get_text(strip=True)
-        if text == today:
+        text = date_p.get_text(strip=True)  # напр. "26th Aug"
+        site_dt = _parse_site_date(text, today)
+        if site_dt is None:
+            continue
+
+        # если последней джобы для этого источника нет — берём всё
+        if (last_parsed_date is None) or (site_dt >= last_parsed_date):
             matching_links.append(child)
 
     return matching_links
@@ -131,9 +176,9 @@ async def scrape_justremote_jobs(session: Session):
     }
 
     proxy = {
-        "server": f"socks5://{settings.SOCKS5_HOST}:1080",
-        "username": settings.SOCKS5_USER,
-        "password": settings.SOCKS5_PASSWORD,
+        "server": f"http://{settings.PROXY_HOST}:8000",
+        "username": settings.PROXY_USER,
+        "password": settings.PROXY_PASS,
     }
 
     async with async_playwright() as p:
@@ -143,8 +188,7 @@ async def scrape_justremote_jobs(session: Session):
             proxy=proxy
         )
         page = await login(browser)
-        job_links = await get_fresh_job_rows(page)
-
+        job_links = await get_fresh_job_rows(page, session)
         stats["total_found"] = len(job_links)
 
         jobs = []

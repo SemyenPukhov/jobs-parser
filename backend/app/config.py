@@ -22,10 +22,10 @@ class Settings(BaseSettings):
     SLACK_BOT_TOKEN: str | None = os.getenv("SLACK_BOT_TOKEN")
     SLACK_CHANNEL_ID: str | None = os.getenv("SLACK_CHANNEL_ID")
 
-    # SOCKS5
-    SOCKS5_USER: str | None = os.getenv("SOCKS5_USER")
-    SOCKS5_PASSWORD: str | None = os.getenv("SOCKS5_PASSWORD")
-    SOCKS5_HOST: str | None = os.getenv("SOCKS5_HOST")
+    # PROXY
+    PROXY_USER: str | None = os.getenv("PROXY_USER")
+    PROXY_PASS: str | None = os.getenv("PROXY_PASS")
+    PROXY_HOST: str | None = os.getenv("PROXY_HOST")
 
     # just remote
     JUST_REMOTE_LOGIN: str = os.getenv("JUST_REMOTE_LOGIN")
