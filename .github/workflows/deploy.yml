@@ -61,9 +61,9 @@ jobs:
             SLACK_CHANNEL_ID=${{ secrets.SLACK_CHANNEL_ID }}
             JUST_REMOTE_LOGIN=${{ secrets.JUST_REMOTE_LOGIN }}
             JUST_REMOTE_PWD=${{ secrets.JUST_REMOTE_PWD }}
-            SOCKS5_USER=${{ secrets.SOCKS5_USER }}
-            SOCKS5_PASSWORD=${{ secrets.SOCKS5_PASSWORD }}
-            SOCKS5_HOST=${{ secrets.SOCKS5_HOST }}
+            PROXY_USER=${{ secrets.PROXY_USER }}
+            PROXY_PASS=${{ secrets.PROXY_PASS }}
+            PROXY_HOST=${{ secrets.PROXY_HOST }}
             ENVIRONMENT=prod
             EOL
 
@@ -72,3 +72,4 @@ jobs:
             docker compose -f docker-compose.prod.yml up -d --build
 
             echo "✅ Деплой завершён"
+
