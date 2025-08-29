@@ -90,13 +90,9 @@ def start_scheduler():
     # Добавляем задачу в планировщик для парсеров
     scheduler.add_job(
         run_parsers,
-        trigger=CronTrigger(
-            hour=3,
-            minute=0,
-            timezone=moscow_tz
-        ),
-        id='daily_parsers',
-        name='Запуск парсеров каждый день в 03:00 по Москве'
+        trigger=CronTrigger(hour=3, minute=15, timezone=moscow_tz),
+        id="daily_parsers",
+        name="Запуск парсеров каждый день в 03:15 по Москве",
     )
 
     # Добавляем задачу в планировщик для аналитики
