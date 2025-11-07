@@ -12,6 +12,7 @@ from app.db import get_session
 from app.logger import logger
 from app.utils.slack import send_slack_message
 from app.analytics import send_daily_analytics
+from app.matching import run_matching, send_matching_results
 import asyncio
 
 # Создаем планировщик
@@ -82,6 +83,31 @@ async def run_parsers():
         session.close()
 
 
+async def run_matching_job():
+    """Run matching of developers with jobs"""
+    logger.info("🔍 Начинаю матчинг разработчиков с вакансиями")
+    await send_slack_message("🔍 Запуск ежедневного матчинга разработчиков с вакансиями")
+    
+    session = next(get_session())
+    try:
+        results = await run_matching(session)
+        
+        if results:
+            await send_matching_results(results, session)
+            logger.info(f"✅ Матчинг завершен успешно. Найдено совпадений для {len(results)} вакансий")
+            await send_slack_message(f"✅ Матчинг завершен успешно. Обработано {len(results)} вакансий")
+        else:
+            logger.info("ℹ️ Матчинг завершен. Совпадений не найдено")
+            await send_slack_message("ℹ️ Матчинг завершен. Совпадений не найдено")
+            
+    except Exception as e:
+        error_msg = f"❌ Ошибка при матчинге: {str(e)}"
+        logger.error(error_msg)
+        await send_slack_message(error_msg)
+    finally:
+        session.close()
+
+
 def start_scheduler():
     """Запускает планировщик"""
     # Настраиваем время запуска (03:00 по Москве)
@@ -105,6 +131,19 @@ def start_scheduler():
         ),
         id='daily_analytics',
         name='Отправка ежедневной аналитики в 21:00 по Москве'
+    )
+
+    # Добавляем задачу в планировщик для матчинга разработчиков с вакансиями
+    scheduler.add_job(
+        run_matching_job,
+        trigger=CronTrigger(
+            day_of_week='mon-fri',
+            hour=9,
+            minute=0,
+            timezone=moscow_tz
+        ),
+        id='daily_matching',
+        name='Матчинг разработчиков с вакансиями (пн-пт в 09:00 МСК)'
     )
 
     # Запускаем планировщик

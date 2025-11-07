@@ -233,3 +233,17 @@ def list_pending_jobs(
         jobs=pending_jobs,
         available_sources=available_sources
     )
+
+
+@router.post("/matching/run")
+async def manual_matching(
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
+):
+    """
+    Manually trigger the matching process of developers with jobs.
+    This runs in the background and sends results to Slack.
+    """
+    from app.scheduler import run_matching_job
+    background_tasks.add_task(run_matching_job)
+    return {"message": "Matching started in background", "status": "started"}
