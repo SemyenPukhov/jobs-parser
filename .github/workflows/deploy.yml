@@ -59,11 +59,16 @@ jobs:
             VITE_API_URL=http://${{ secrets.SSH_HOST }}
             SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}
             SLACK_CHANNEL_ID=${{ secrets.SLACK_CHANNEL_ID }}
+            SLACK_MANAGER_ID=${{ secrets.SLACK_MANAGER_ID }}
             JUST_REMOTE_LOGIN=${{ secrets.JUST_REMOTE_LOGIN }}
             JUST_REMOTE_PWD=${{ secrets.JUST_REMOTE_PWD }}
             PROXY_USER=${{ secrets.PROXY_USER }}
             PROXY_PASS=${{ secrets.PROXY_PASS }}
             PROXY_HOST=${{ secrets.PROXY_HOST }}
+            OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
+            DEVELOPERS_API_URL=http://103.54.16.194/api/resumes/active/all
+            MATCHING_THRESHOLD_HIGH=70
+            MATCHING_THRESHOLD_LOW=50
             ENVIRONMENT=prod
             EOL
 
