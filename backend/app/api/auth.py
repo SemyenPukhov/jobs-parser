@@ -35,18 +35,7 @@ async def register(user_data: UserCreate, session: Session = Depends(get_session
 @router.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
     user = session.exec(select(User).where(User.email == form_data.username)).first()
-    
-    # Protect against bcrypt crashes
-    password_valid = False
-    try:
-        if user:
-            password_valid = verify_password(form_data.password, user.hashed_password)
-    except Exception as e:
-        # Log but don't crash the server
-        print(f"Password verification failed: {e}")
-        password_valid = False
-    
-    if not user or not password_valid:
+    if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
