@@ -4,16 +4,27 @@ from slack_sdk.errors import SlackApiError
 from app.logger import logger
 from app.config import settings
 
-# Инициализируем клиент Slack
-slack_token = settings.SLACK_BOT_TOKEN
-slack_channel = settings.SLACK_CHANNEL_ID
+# Глобальная переменная для клиента
+_client = None
 
-if not slack_token or not slack_channel:
-    logger.warning(
-        "⚠️ Slack токен или ID канала не настроены. Уведомления в Slack отключены.")
-    client = None
-else:
-    client = WebClient(token=slack_token)
+
+def _get_slack_client():
+    """Ленивая инициализация Slack клиента"""
+    global _client
+    
+    if _client is not None:
+        return _client
+    
+    slack_token = settings.SLACK_BOT_TOKEN
+    slack_channel = settings.SLACK_CHANNEL_ID
+    
+    if not slack_token or not slack_channel:
+        logger.warning(
+            "⚠️ Slack токен или ID канала не настроены. Уведомления в Slack отключены.")
+        return None
+    
+    _client = WebClient(token=slack_token)
+    return _client
 
 
 async def send_slack_message(message: str) -> bool:
@@ -27,6 +38,8 @@ async def send_slack_message(message: str) -> bool:
     Returns:
         bool: True если сообщение отправлено успешно, False в случае ошибки
     """
+    client = _get_slack_client()
+    
     if not client:
         logger.warning(
             "⚠️ Попытка отправить сообщение в Slack, но клиент не инициализирован")
@@ -42,7 +55,7 @@ async def send_slack_message(message: str) -> bool:
         #         blocks[0]["text"]["text"] = f"[{settings.ENVIRONMENT.upper()}] {blocks[0]['text']['text']}"
 
         response = client.chat_postMessage(
-            channel=slack_channel,
+            channel=settings.SLACK_CHANNEL_ID,
             text=prefixed_message,  # Оставляем простой текст для уведомлений
             # blocks=blocks,
             icon_emoji=":robot_face:",
