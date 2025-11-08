@@ -1,5 +1,6 @@
 import httpx
 import json
+import asyncio
 from app.config import settings
 from app.logger import logger
 from typing import Dict, Any, List
@@ -166,8 +167,3 @@ ID: {dev_id}
             return []
     
     return []
-
-
-# Import asyncio at the end to avoid circular imports
-import asyncio
-

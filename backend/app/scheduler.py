@@ -12,7 +12,6 @@ from app.db import get_session
 from app.logger import logger
 from app.utils.slack import send_slack_message
 from app.analytics import send_daily_analytics
-from app.matching import run_matching, send_matching_results
 import asyncio
 
 # Создаем планировщик
@@ -85,6 +84,9 @@ async def run_parsers():
 
 async def run_matching_job():
     """Run matching of developers with jobs"""
+    # Import here to avoid issues during startup
+    from app.matching import run_matching, send_matching_results
+    
     logger.info("🔍 Начинаю матчинг разработчиков с вакансиями")
     await send_slack_message("🔍 Запуск ежедневного матчинга разработчиков с вакансиями")
     

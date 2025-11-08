@@ -244,6 +244,34 @@ async def manual_matching(
     Manually trigger the matching process of developers with jobs.
     This runs in the background and sends results to Slack.
     """
-    from app.scheduler import run_matching_job
-    background_tasks.add_task(run_matching_job)
+    # Import here to avoid circular dependency issues at startup
+    from app.matching import run_matching, send_matching_results
+    
+    async def run_matching_task():
+        """Wrapper to run matching with proper session handling"""
+        from app.db import get_session
+        from app.logger import logger
+        from app.utils.slack import send_slack_message
+        
+        logger.info("🔍 Начинаю ручной запуск матчинга")
+        await send_slack_message("🔍 Ручной запуск матчинга разработчиков")
+        
+        session = next(get_session())
+        try:
+            results = await run_matching(session)
+            if results:
+                await send_matching_results(results, session)
+                logger.info(f"✅ Матчинг завершен. Найдено совпадений для {len(results)} вакансий")
+                await send_slack_message(f"✅ Ручной матчинг завершен. Обработано {len(results)} вакансий")
+            else:
+                logger.info("ℹ️ Матчинг завершен. Совпадений не найдено")
+                await send_slack_message("ℹ️ Матчинг завершен. Совпадений не найдено")
+        except Exception as e:
+            error_msg = f"❌ Ошибка при матчинге: {str(e)}"
+            logger.error(error_msg)
+            await send_slack_message(error_msg)
+        finally:
+            session.close()
+    
+    background_tasks.add_task(run_matching_task)
     return {"message": "Matching started in background", "status": "started"}
