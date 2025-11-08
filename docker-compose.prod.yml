@@ -57,6 +57,7 @@ services:
       PROXY_PASS: ${PROXY_PASS}
       PROXY_HOST: ${PROXY_HOST}
       ENVIRONMENT: ${ENVIRONMENT}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
     depends_on:
       db:
         condition: service_healthy
@@ -85,6 +86,8 @@ services:
       PROXY_PASS: ${PROXY_PASS}
       PROXY_HOST: ${PROXY_HOST}
       ENVIRONMENT: ${ENVIRONMENT}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY} 
+
     networks:
       - app-network
     deploy:
