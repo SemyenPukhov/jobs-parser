@@ -72,7 +72,8 @@ ID: {dev_id}
     }
     
     payload = {
-        "model": "openai/gpt-oss-20b:free",
+        "model": "google/gemma-3-4b-it",
+        # "model": "openai/gpt-oss-20b:free",
         "messages": [
             {
                 "role": "user",
