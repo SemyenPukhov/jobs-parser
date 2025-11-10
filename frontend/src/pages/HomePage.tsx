@@ -24,6 +24,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Progress } from "@/components/ui/progress";
 import { formatDate, daysAgo } from "@/lib/utils";
 import { Dismiss28Regular, Checkmark28Regular } from "@fluentui/react-icons";
 import { useState } from "react";
@@ -165,7 +166,64 @@ export default function HomePage() {
                       </div>
 
                       <div>
-                        <Accordion type="single" collapsible className="w-full">
+                        <Accordion type="single" collapsible className="w-full" defaultValue={j.matching_results ? "matching" : undefined}>
+                          {j.matching_results && (
+                            <AccordionItem value="matching">
+                              <AccordionTrigger>
+                                <div className="flex items-center gap-2">
+                                  <span>Кого надо подать 🎯</span>
+                                  {j.matching_results.matched_at && (
+                                    <span className="text-xs text-muted-foreground font-normal">
+                                      (сматчено: {formatDate(j.matching_results.matched_at)})
+                                    </span>
+                                  )}
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="flex flex-col gap-3">
+                                {j.matching_results.matches && j.matching_results.matches.length > 0 ? (
+                                  j.matching_results.matches.map((match: any) => (
+                                    <div key={match.developer_id} className="border rounded-lg p-4 space-y-2">
+                                      <div className="flex items-center justify-between">
+                                        <h4 className="font-semibold text-lg">{match.developer_name}</h4>
+                                        <span className="text-sm font-medium px-3 py-1 rounded-full bg-primary/10">
+                                          {match.score}%
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="space-y-1">
+                                        <div className="flex justify-between text-xs text-muted-foreground">
+                                          <span>Совпадение</span>
+                                          <span>{match.score}%</span>
+                                        </div>
+                                        <Progress 
+                                          value={match.score} 
+                                          className={`h-2 ${
+                                            match.score >= 80 ? '[&>*]:bg-green-500' : 
+                                            match.score >= 60 ? '[&>*]:bg-yellow-500' : 
+                                            '[&>*]:bg-orange-500'
+                                          }`}
+                                        />
+                                      </div>
+
+                                      <Accordion type="single" collapsible className="w-full">
+                                        <AccordionItem value="reasoning" className="border-0">
+                                          <AccordionTrigger className="text-sm py-2">
+                                            Обоснование
+                                          </AccordionTrigger>
+                                          <AccordionContent className="text-sm text-muted-foreground">
+                                            {match.reasoning}
+                                          </AccordionContent>
+                                        </AccordionItem>
+                                      </Accordion>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <p className="text-muted-foreground text-center py-4">Матчей нет</p>
+                                )}
+                              </AccordionContent>
+                            </AccordionItem>
+                          )}
+                          
                           <AccordionItem value="item-1">
                             <AccordionTrigger>
                               Описание запроса
