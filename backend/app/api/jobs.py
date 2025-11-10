@@ -33,6 +33,7 @@ class PendingJobRead(BaseModel):
     apply_url: Optional[str]
     salary: Optional[str]
     parsed_at: datetime
+    matching_results: Optional[dict]
 
     class Config:
         orm_mode = True
@@ -224,7 +225,8 @@ def list_pending_jobs(
             company_url=job.company_url,
             apply_url=job.apply_url,
             salary=job.salary,
-            parsed_at=job.parsed_at
+            parsed_at=job.parsed_at,
+            matching_results=job.matching_results
         )
         for job in jobs
     ]
