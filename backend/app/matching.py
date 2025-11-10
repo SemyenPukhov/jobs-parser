@@ -6,6 +6,7 @@ from app.config import settings
 from app.logger import logger
 from app.utils.openrouter import evaluate_match_batch
 from app.utils.slack import send_slack_message
+from datetime import datetime
 import re
 
 
@@ -69,6 +70,7 @@ def filter_jobs(jobs: List[Job]) -> List[Job]:
 async def run_matching(session: Session) -> Dict[str, List[Dict[str, Any]]]:
     """
     Main matching function that evaluates developers against open jobs.
+    Returns ALL unprocessed jobs (for Slack), but only runs matching on jobs without results.
     
     Args:
         session: Database session
@@ -84,29 +86,58 @@ async def run_matching(session: Session) -> Dict[str, List[Dict[str, Any]]]:
         logger.warning("⚠️ Не найдено активных разработчиков")
         return {}
     
-    # Step 2: Get unprocessed jobs from database
-    statement = (
+    # Step 2: Get ALL unprocessed jobs (not yet processed by manager)
+    all_unprocessed_statement = (
         select(Job)
         .outerjoin(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
         .where(JobProcessingStatus.job_id == None)
     )
-    jobs = session.exec(statement).all()
+    all_unprocessed_jobs = session.exec(all_unprocessed_statement).all()
     
-    if not jobs:
+    if not all_unprocessed_jobs:
         logger.warning("⚠️ Не найдено необработанных вакансий")
         return {}
     
-    logger.info(f"📊 Найдено {len(jobs)} необработанных вакансий")
+    logger.info(f"📊 Найдено {len(all_unprocessed_jobs)} необработанных вакансий")
     
-    # Step 3: Filter jobs (remote only)
-    filtered_jobs = filter_jobs(list(jobs))
+    # Step 3: Separate jobs into those needing matching and those already matched
+    jobs_needing_matching = [job for job in all_unprocessed_jobs if job.matching_results is None]
+    jobs_already_matched = [job for job in all_unprocessed_jobs if job.matching_results is not None]
+    
+    logger.info(f"🆕 Новых вакансий для матчинга: {len(jobs_needing_matching)}")
+    logger.info(f"✅ Вакансий с сохраненными результатами: {len(jobs_already_matched)}")
+    
+    # Step 4: Initialize results dictionary with jobs that already have matching results
+    results = {}
+    
+    # Load existing matching results from database
+    for job in jobs_already_matched:
+        if job.matching_results and job.matching_results.get("matches"):
+            # Reconstruct matches from saved data
+            job_matches = []
+            for match_data in job.matching_results["matches"]:
+                # Find the developer by ID
+                dev = next((d for d in developers if str(d.get("id")) == str(match_data["developer_id"])), None)
+                if dev:
+                    job_matches.append({
+                        "developer": dev,
+                        "score": match_data["score"],
+                        "reasoning": match_data["reasoning"]
+                    })
+            
+            if job_matches:
+                results[str(job.id)] = job_matches
+                logger.info(f"📥 Загружены сохраненные результаты для {job.title}: {len(job_matches)} кандидатов")
+    
+    # Step 5: Filter NEW jobs (remote only)
+    filtered_jobs = filter_jobs(jobs_needing_matching)
     
     if not filtered_jobs:
-        logger.warning("⚠️ После фильтрации не осталось подходящих вакансий")
-        return {}
+        logger.info("ℹ️ Нет новых вакансий для матчинга после фильтрации")
+        # Return existing results from already matched jobs
+        return results
     
-    # Step 4: Match developers to jobs using BATCH evaluation
-    results = {}
+    # Step 6: Match developers to NEW jobs using BATCH evaluation
     total_evaluations = 0
     scores_list = []
     
@@ -155,9 +186,30 @@ async def run_matching(session: Session) -> Dict[str, List[Dict[str, Any]]]:
             # Sort matches by score (descending)
             job_matches.sort(key=lambda x: x["score"], reverse=True)
             
+            # Save matching results to database to avoid re-processing (even if no matches found)
+            matching_data = {
+                "matched_at": datetime.utcnow().isoformat(),
+                "matches_count": len(job_matches),
+                "matches": [
+                    {
+                        "developer_id": match["developer"].get("id"),
+                        "developer_name": match["developer"].get("name"),
+                        "score": match["score"],
+                        "reasoning": match["reasoning"]
+                    }
+                    for match in job_matches
+                ]
+            }
+            job.matching_results = matching_data
+            session.add(job)
+            session.commit()
+            
             if job_matches:
                 results[str(job.id)] = job_matches
                 logger.info(f"✅ Найдено {len(job_matches)} подходящих кандидатов для {job.title}")
+                logger.info(f"💾 Сохранены результаты матчинга в БД")
+            else:
+                logger.info(f"ℹ️ Для вакансии {job.title} не найдено подходящих кандидатов (сохранено в БД)")
             
         except Exception as e:
             logger.error(f"❌ Ошибка при batch оценке для вакансии {job.title}: {str(e)}")

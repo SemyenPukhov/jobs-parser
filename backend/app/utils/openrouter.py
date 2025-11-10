@@ -44,25 +44,75 @@ ID: {dev_id}
 {truncated_text}
 """
     
-    prompt = f"""Оцени насколько каждый разработчик подходит для вакансии по шкале 0-100.
+    prompt = f"""You are a technical recruiter evaluating developer-job matches. Rate each developer on a 0-100 scale.
 
-ВАКАНСИЯ:
-Название: {job_info.get('title', 'Не указано')}
-Компания: {job_info.get('company', 'Не указана')}
-Описание: {job_info.get('description', 'Не указано')[:3000]}
+JOB POSITION:
+Title: {job_info.get('title', 'Not specified')}
+Company: {job_info.get('company', 'Not specified')}
+Description: {job_info.get('description', 'Not specified')[:3000]}
 
-РАЗРАБОТЧИКИ:
+DEVELOPERS:
 {developers_text}
 
-Ответь ТОЛЬКО в формате JSON без дополнительного текста:
+CRITICAL MATCHING RULES:
+
+1. IDENTIFY PRIMARY TECHNOLOGIES FIRST:
+   - Programming languages (Python, JavaScript/TypeScript, Java, Go, C#, Ruby, PHP, etc.)
+   - Major frontend frameworks (React, Vue, Angular, Svelte)
+   - Major backend frameworks (Django, Flask, FastAPI, Spring Boot, .NET, Ruby on Rails)
+   - Databases (PostgreSQL, MongoDB, MySQL, Redis, etc.)
+   - Cloud platforms (AWS, GCP, Azure)
+
+2. AUTOMATIC REJECTION (score 0-20):
+   - Developer DOES NOT have the PRIMARY programming language or framework
+   - Example: React developer for a Python backend job → 0-20 score
+   - Example: Python developer for a React frontend job → 0-20 score
+   
+3. IGNORE easily learnable technologies that are add-ons to primary stack:
+   - State management: Redux, MobX, Zustand, Pinia, Vuex (if knows React/Vue)
+   - Meta-frameworks: Next.js, Nuxt, Remix (if knows React/Vue)
+   - Styling libraries: Tailwind, styled-components, CSS Modules, Sass, Material-UI, Bootstrap
+   - Build tools: Webpack, Vite, Rollup, Parcel
+   - Linters/formatters: ESLint, Prettier
+   - Testing libraries: Jest, Vitest, Cypress (basic level)
+   - Simple Node frameworks: Express, Fastify (if knows Node.js)
+   - Simple Python frameworks: Flask, FastAPI (if knows Django or Python well)
+   - HTTP clients: Axios, Fetch
+   - Docker basics, Git basics
+
+4. FOCUS ON:
+   - Core programming language proficiency
+   - Major framework experience (years, projects)
+   - Database experience
+   - Architectural skills (system design, patterns)
+   - Domain knowledge matching the job
+   - Experience level match (junior/mid/senior)
+
+SCORING SCALE:
+- 0-20: Missing PRIMARY technology (must be filtered out)
+  Example: "React developer, no Python experience" for Python job
+  
+- 21-49: Has PRIMARY tech but significant gaps in other requirements
+  Example: Knows Python but job needs 5 years, has only 1 year
+  
+- 50-69: Good match - has PRIMARY tech + reasonable experience level
+  Example: Python developer with 3 years for mid-level Python job
+  
+- 70-84: Strong match - has PRIMARY tech + secondary skills + experience match
+  Example: Python + Django + PostgreSQL + AWS for similar stack job
+  
+- 85-100: Excellent match - has ALL core requirements + domain knowledge
+  Example: Python + Django + PostgreSQL + AWS + fintech experience for fintech job
+
+RESPOND ONLY in this JSON format without any extra text:
 {{
   "matches": [
-    {{"developer_id": "ID разработчика", "score": число от 0 до 100, "reasoning": "краткое обоснование"}},
+    {{"developer_id": "developer ID", "score": number 0-100, "reasoning": "brief technical explanation focusing on PRIMARY tech match"}},
     ...
   ]
 }}
 
-Включи в ответ ВСЕХ разработчиков, даже с низкими оценками."""
+Include ALL developers in response, even with low scores."""
 
     headers = {
         "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",

@@ -1,10 +1,11 @@
-from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional, List
+from sqlmodel import SQLModel, Field, Relationship, Column
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 import uuid
 from uuid import UUID
 from enum import Enum
 from pydantic import BaseModel, EmailStr
+from sqlalchemy import JSON
 
 
 class JobProcessingStatusEnum(str, Enum):
@@ -35,6 +36,8 @@ class Job(SQLModel, table=True):
     apply_url: Optional[str] = None
     salary: Optional[str] = None
     parsed_at: datetime = Field(default_factory=datetime.utcnow)
+    matching_results: Optional[Dict[str, Any]] = Field(
+        default=None, sa_column=Column(JSON))
 
     processing_status: Optional[JobProcessingStatus] = Relationship(
         back_populates="job")
@@ -60,6 +63,7 @@ class JobRead(BaseModel):
     apply_url: Optional[str]
     salary: Optional[str]
     parsed_at: datetime
+    matching_results: Optional[Dict[str, Any]]
     processing_status: Optional[JobProcessingStatusRead]
 
     class Config:
