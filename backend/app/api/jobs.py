@@ -67,7 +67,7 @@ async def run_scraper(
 async def run_scraper(
     background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
-    # current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     background_tasks.add_task(scrape_devby_jobs, session)
     return {"message": "Scraping started in background"}
@@ -203,7 +203,7 @@ async def postpone(
     new_status = JobProcessingStatus(
         job_id=job_id,
         user_id=current_user.id,
-        status=JobProcessingStatusEnum.POSTPONED,
+        status="Postponed",
         comment=data.comment,
         created_at=datetime.utcnow()
     )
