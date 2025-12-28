@@ -300,7 +300,7 @@ def list_postponed_jobs(
     statement = (
         select(Job)
         .join(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
-        .where(JobProcessingStatus.status == JobProcessingStatusEnum.POSTPONED)
+        .where(JobProcessingStatus.status == JobProcessingStatusEnum.POSTPONED.value)
     )
 
     # Add source filter if specified
@@ -316,7 +316,7 @@ def list_postponed_jobs(
     all_sources_statement = (
         select(Job.source)
         .join(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
-        .where(JobProcessingStatus.status == JobProcessingStatusEnum.POSTPONED)
+        .where(JobProcessingStatus.status == JobProcessingStatusEnum.POSTPONED.value)
         .distinct()
     )
     available_sources = [source for source in session.exec(
