@@ -296,55 +296,59 @@ def list_postponed_jobs(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    # Get jobs with POSTPONED status
-    statement = (
-        select(Job)
-        .join(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
-        .where(JobProcessingStatus.status == "Postponed")
-    )
-
-    # Add source filter if specified
-    if source:
-        statement = statement.where(Job.source == source)
-
-    # Add sorting
-    statement = statement.order_by(desc(Job.parsed_at))
-
-    jobs = session.exec(statement).all()
-
-    # Get all unique sources from postponed jobs
-    all_sources_statement = (
-        select(Job.source)
-        .join(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
-        .where(JobProcessingStatus.status == "Postponed")
-        .distinct()
-    )
-    available_sources = [source for source in session.exec(
-        all_sources_statement).all()]
-
-    # Convert Job to PendingJobRead
-    postponed_jobs = [
-        PendingJobRead(
-            id=job.id,
-            title=job.title,
-            url=job.url,
-            source=job.source,
-            description=job.description,
-            company=job.company,
-            company_url=job.company_url,
-            apply_url=job.apply_url,
-            salary=job.salary,
-            parsed_at=job.parsed_at,
-            matching_results=job.matching_results,
-            amocrm_lead_id=job.amocrm_lead_id
+    try:
+        # Get jobs with POSTPONED status
+        statement = (
+            select(Job)
+            .join(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
+            .where(JobProcessingStatus.status == "Postponed")
         )
-        for job in jobs
-    ]
 
-    return PendingJobsResponse(
-        jobs=postponed_jobs,
-        available_sources=available_sources
-    )
+        # Add source filter if specified
+        if source:
+            statement = statement.where(Job.source == source)
+
+        # Add sorting
+        statement = statement.order_by(desc(Job.parsed_at))
+
+        jobs = session.exec(statement).all()
+
+        # Get all unique sources from postponed jobs
+        all_sources_statement = (
+            select(Job.source)
+            .join(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
+            .where(JobProcessingStatus.status == "Postponed")
+            .distinct()
+        )
+        available_sources = [source for source in session.exec(
+            all_sources_statement).all()]
+
+        # Convert Job to PendingJobRead
+        postponed_jobs = [
+            PendingJobRead(
+                id=job.id,
+                title=job.title,
+                url=job.url,
+                source=job.source,
+                description=job.description,
+                company=job.company,
+                company_url=job.company_url,
+                apply_url=job.apply_url,
+                salary=job.salary,
+                parsed_at=job.parsed_at,
+                matching_results=job.matching_results,
+                amocrm_lead_id=job.amocrm_lead_id
+            )
+            for job in jobs
+        ]
+
+        return PendingJobsResponse(
+            jobs=postponed_jobs,
+            available_sources=available_sources
+        )
+    except Exception:
+        # Return empty list if enum value doesn't exist yet
+        return PendingJobsResponse(jobs=[], available_sources=[])
 
 
 @router.post("/matching/run")
