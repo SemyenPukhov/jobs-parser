@@ -5,7 +5,8 @@ from app.models import Job, JobProcessingStatus
 from app.config import settings
 from app.logger import logger
 from app.utils.openrouter import evaluate_match_batch
-from app.utils.slack import send_slack_message
+from app.utils.slack import send_slack_message, send_crm_lead_created_alert
+from app.utils.amocrm import create_amocrm_lead
 from datetime import datetime
 import re
 
@@ -208,6 +209,34 @@ async def run_matching(session: Session) -> Dict[str, List[Dict[str, Any]]]:
                 results[str(job.id)] = job_matches
                 logger.info(f"✅ Найдено {len(job_matches)} подходящих кандидатов для {job.title}")
                 logger.info(f"💾 Сохранены результаты матчинга в БД")
+                
+                # Create AmoCRM lead if any candidate has score >= 70
+                top_candidates = [m for m in matching_data["matches"] if m["score"] >= settings.MATCHING_THRESHOLD_HIGH]
+                if top_candidates and not job.amocrm_lead_id:
+                    logger.info(f"🏢 Создаю карточку в AmoCRM для вакансии: {job.title}")
+                    lead_id = await create_amocrm_lead(
+                        job_title=job.title,
+                        job_company=job.company,
+                        job_url=job.url,
+                        job_salary=job.salary,
+                        top_candidates=top_candidates
+                    )
+                    
+                    if lead_id:
+                        job.amocrm_lead_id = lead_id
+                        job.amocrm_created_at = datetime.utcnow()
+                        session.add(job)
+                        session.commit()
+                        logger.info(f"✅ AmoCRM lead создан: {lead_id}")
+                        
+                        # Send Slack notification about CRM lead creation
+                        await send_crm_lead_created_alert(
+                            job_title=job.title,
+                            job_company=job.company,
+                            job_url=job.url,
+                            lead_id=lead_id,
+                            candidates=top_candidates
+                        )
             else:
                 logger.info(f"ℹ️ Для вакансии {job.title} не найдено подходящих кандидатов (сохранено в БД)")
             

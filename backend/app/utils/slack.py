@@ -55,6 +55,50 @@ async def send_slack_message(message: str) -> bool:
         return False
 
 
+async def send_crm_lead_created_alert(
+    job_title: str,
+    job_company: str | None,
+    job_url: str,
+    lead_id: str,
+    candidates: list
+) -> bool:
+    """
+    Send Slack notification when a CRM lead is created.
+    
+    Args:
+        job_title: Job title
+        job_company: Company name
+        job_url: URL to original job posting
+        lead_id: AmoCRM lead ID
+        candidates: List of candidates with score >= 70
+    
+    Returns:
+        bool: True if message was sent successfully
+    """
+    manager_mention = f"<@{settings.SLACK_MANAGER_ID}>" if settings.SLACK_MANAGER_ID else "<!here>"
+    
+    crm_url = f"{settings.AMOCRM_BASE_URL}/leads/detail/{lead_id}"
+    
+    message = f"""🏢 *Создана карточка в AmoCRM!*
+
+📋 *Вакансия:* {job_title}
+🏢 *Компания:* {job_company or 'Не указана'}
+🔗 *Оригинал:* {job_url}
+🔗 *CRM:* {crm_url}
+
+✅ *Кандидаты (score >= 70):*
+"""
+    
+    for candidate in candidates:
+        name = candidate.get("developer_name") or candidate.get("developer", {}).get("name", "Unknown")
+        score = candidate.get("score", 0)
+        message += f"• {name} - {score}%\n"
+    
+    message += f"\n👤 {manager_mention}"
+    
+    return await send_slack_message(message)
+
+
 def create_parser_status_block(parser_name: str, status: str, details: str = None) -> list:
     """
     Создает форматированный блок для статуса парсера.

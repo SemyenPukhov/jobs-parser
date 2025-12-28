@@ -148,7 +148,20 @@ export default function HomePage() {
                   <CardHeader>
                     <CardTitle>
                       <div className="flex">
-                        <span className="flex gap-2 mr-auto">{j.source}</span>
+                        <span className="flex gap-2 mr-auto items-center">
+                          {j.source}
+                          {j.amocrm_lead_id && (
+                            <a
+                              href={`https://fortech.amocrm.ru/leads/detail/${j.amocrm_lead_id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                              title="Открыть в AmoCRM"
+                            >
+                              🏢 В CRM
+                            </a>
+                          )}
+                        </span>
                         <a href={j.company_url} target="_blank">
                           Компания:{" "}
                           <span className="font-bold">{j.company}</span>

@@ -38,6 +38,9 @@ class Job(SQLModel, table=True):
     parsed_at: datetime = Field(default_factory=datetime.utcnow)
     matching_results: Optional[Dict[str, Any]] = Field(
         default=None, sa_column=Column(JSON))
+    # AmoCRM integration fields
+    amocrm_lead_id: Optional[str] = None
+    amocrm_created_at: Optional[datetime] = None
 
     processing_status: Optional[JobProcessingStatus] = Relationship(
         back_populates="job")
@@ -65,6 +68,9 @@ class JobRead(BaseModel):
     parsed_at: datetime
     matching_results: Optional[Dict[str, Any]]
     processing_status: Optional[JobProcessingStatusRead]
+    # AmoCRM integration fields
+    amocrm_lead_id: Optional[str] = None
+    amocrm_created_at: Optional[datetime] = None
 
     class Config:
         orm_mode = True
