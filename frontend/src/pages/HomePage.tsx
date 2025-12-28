@@ -53,12 +53,23 @@ const POSTPONE_TEXT = {
   commentRequired: false,
 };
 
+const ITEMS_PER_PAGE = 20;
+
 type AllowedActions = "accept" | "reject" | "postpone";
 export default function HomePage() {
   const [dialogConfig, setDialogConfig] = useState<null | typeof ACCEPT_TEXTS>(null);
   const [comment, setComment] = useState("");
   const [source, setSource] = useState("");
   const [activeTab, setActiveTab] = useState("pending");
+  const [visiblePending, setVisiblePending] = useState(ITEMS_PER_PAGE);
+  const [visiblePostponed, setVisiblePostponed] = useState(ITEMS_PER_PAGE);
+
+  // Reset visible count when source changes
+  const handleSourceChange = (newSource: string) => {
+    setSource(newSource);
+    setVisiblePending(ITEMS_PER_PAGE);
+    setVisiblePostponed(ITEMS_PER_PAGE);
+  };
 
   const [id, setId] = useState<string | null>(null);
 
@@ -71,15 +82,18 @@ export default function HomePage() {
       ? jobsResponse.available_sources
       : [];
 
-  const jobs =
+  const allJobs =
     jobsResponse && jobsResponse.jobs && jobsResponse.jobs.length > 0
       ? jobsResponse.jobs
       : [];
 
-  const postponedJobs =
+  const allPostponedJobs =
     postponedResponse && postponedResponse.jobs && postponedResponse.jobs.length > 0
       ? postponedResponse.jobs
       : [];
+
+  const jobs = allJobs.slice(0, visiblePending);
+  const postponedJobs = allPostponedJobs.slice(0, visiblePostponed);
 
   const open = Boolean(dialogConfig);
   const handleOpenChange = (action?: AllowedActions, jobId?: string) => {
@@ -291,7 +305,7 @@ export default function HomePage() {
       <div className="flex flex-col p-[16px] pt-0">
         <div className="flex items-center h-[48px] mb-4">
           <div className="ml-auto">
-            <Select onValueChange={(v) => setSource(v)}>
+            <Select onValueChange={handleSourceChange}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Ресурс" />
               </SelectTrigger>
@@ -311,10 +325,10 @@ export default function HomePage() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="pending">
-              Необработанные ({jobs.length})
+              Необработанные ({allJobs.length})
             </TabsTrigger>
             <TabsTrigger value="postponed">
-              Отложенные ({postponedJobs.length})
+              Отложенные ({allPostponedJobs.length})
             </TabsTrigger>
           </TabsList>
 
@@ -325,12 +339,21 @@ export default function HomePage() {
                   Загрузка вакансий
                 </h2>
               )}
-              {!isLoading && jobs.length === 0 && (
+              {!isLoading && allJobs.length === 0 && (
                 <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
                   Новых нет. Все обработаны 💯
                 </h2>
               )}
               {!isLoading && jobs.length > 0 && jobs.map((j: any) => renderJobCard(j, true))}
+              {!isLoading && visiblePending < allJobs.length && (
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  onClick={() => setVisiblePending(prev => prev + ITEMS_PER_PAGE)}
+                >
+                  Показать ещё ({allJobs.length - visiblePending} осталось)
+                </Button>
+              )}
             </div>
           </TabsContent>
 
@@ -341,12 +364,21 @@ export default function HomePage() {
                   Загрузка отложенных вакансий
                 </h2>
               )}
-              {!isLoadingPostponed && postponedJobs.length === 0 && (
+              {!isLoadingPostponed && allPostponedJobs.length === 0 && (
                 <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
                   Отложенных вакансий нет ⏸️
                 </h2>
               )}
               {!isLoadingPostponed && postponedJobs.length > 0 && postponedJobs.map((j: any) => renderJobCard(j, false))}
+              {!isLoadingPostponed && visiblePostponed < allPostponedJobs.length && (
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  onClick={() => setVisiblePostponed(prev => prev + ITEMS_PER_PAGE)}
+                >
+                  Показать ещё ({allPostponedJobs.length - visiblePostponed} осталось)
+                </Button>
+              )}
             </div>
           </TabsContent>
         </Tabs>
