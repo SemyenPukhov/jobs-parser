@@ -4,6 +4,7 @@ from app.parsers.thehub_io import scrape_thehub_jobs
 from app.parsers.vseti_app import scrape_vseti_app_jobs
 from app.parsers.dev_by import scrape_devby_jobs
 from app.parsers.justremote_co import scrape_justremote_jobs
+from app.parsers.remoteok import scrape_remoteok_jobs
 
 from app.utils.slack import send_slack_message
 
@@ -95,6 +96,16 @@ async def run_scraper(
 ):
     background_tasks.add_task(scrape_vseti_app_jobs, session)
     return {"message": "Scraping started in background"}
+
+
+@router.post("/scrape/remoteok-jobs")
+async def run_remoteok_scraper(
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    background_tasks.add_task(scrape_remoteok_jobs, session)
+    return {"message": "Remote OK scraping started in background"}
 
 
 @router.post("/jobs/{job_id}/accept")

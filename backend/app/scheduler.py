@@ -6,6 +6,7 @@ from app.parsers.thehub_io import scrape_thehub_jobs
 from app.parsers.vseti_app import scrape_vseti_app_jobs
 from app.parsers.dev_by import scrape_devby_jobs
 from app.parsers.justremote_co import scrape_justremote_jobs
+from app.parsers.remoteok import scrape_remoteok_jobs
 
 
 from app.db import get_session
@@ -70,6 +71,15 @@ async def run_parsers():
         await scrape_justremote_jobs(session)
         await send_slack_message(
             "Парсер justremote.co завершил работу ✅"
+        )
+
+        logger.info("📊 Запускаю remoteok.io парсер")
+        await send_slack_message(
+            "Запуск парсера remoteok.io 🔨"
+        )
+        await scrape_remoteok_jobs(session)
+        await send_slack_message(
+            "Парсер remoteok.io завершил работу ✅"
         )
 
         logger.info("✅ Все парсеры успешно завершили работу")
