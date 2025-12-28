@@ -18,7 +18,7 @@ class JobProcessingStatus(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     job_id: UUID = Field(foreign_key="job.id", unique=True, nullable=False)
     user_id: UUID = Field(foreign_key="user.id", nullable=False)
-    status: JobProcessingStatusEnum
+    status: str  # Use string to match PostgreSQL enum values
     comment: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
