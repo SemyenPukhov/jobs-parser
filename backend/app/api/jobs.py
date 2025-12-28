@@ -23,6 +23,10 @@ class AcceptOrRejectJobRequest(BaseModel):
     comment: str
 
 
+class PostponeJobRequest(BaseModel):
+    comment: Optional[str] = None
+
+
 class PendingJobRead(BaseModel):
     id: UUID
     title: str
@@ -35,6 +39,7 @@ class PendingJobRead(BaseModel):
     salary: Optional[str]
     parsed_at: datetime
     matching_results: Optional[dict]
+    amocrm_lead_id: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -178,6 +183,42 @@ async def reject(
     return {"success": True, "status_id": str(new_status.id)}
 
 
+@router.post("/jobs/{job_id}/postpone")
+async def postpone(
+    job_id: UUID,
+    data: PostponeJobRequest,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    job = session.exec(select(Job).where(Job.id == job_id)).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    existing_status = session.exec(
+        select(JobProcessingStatus).where(JobProcessingStatus.job_id == job_id)
+    ).first()
+
+    if existing_status:
+        return {"success": False, "reason": "Already processed"}
+
+    new_status = JobProcessingStatus(
+        job_id=job_id,
+        user_id=current_user.id,
+        status=JobProcessingStatusEnum.POSTPONED,
+        comment=data.comment,
+        created_at=datetime.utcnow()
+    )
+    session.add(new_status)
+    session.commit()
+    session.refresh(new_status)
+
+    # Отправляем уведомление в Slack
+    comment_text = f" с комментарием: {data.comment}" if data.comment else ""
+    message = f"Пользователь {current_user.email} отложил запрос {job.url}{comment_text}"
+    await send_slack_message(message)
+
+    return {"success": True, "status_id": str(new_status.id)}
+
+
 @router.get("/jobs", response_model=list[JobRead])
 def list_jobs(
     session: Session = Depends(get_session),
@@ -237,13 +278,71 @@ def list_pending_jobs(
             apply_url=job.apply_url,
             salary=job.salary,
             parsed_at=job.parsed_at,
-            matching_results=job.matching_results
+            matching_results=job.matching_results,
+            amocrm_lead_id=job.amocrm_lead_id
         )
         for job in jobs
     ]
 
     return PendingJobsResponse(
         jobs=pending_jobs,
+        available_sources=available_sources
+    )
+
+
+@router.get("/postponed-jobs", response_model=PendingJobsResponse)
+def list_postponed_jobs(
+    source: Optional[str] = None,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    # Get jobs with POSTPONED status
+    statement = (
+        select(Job)
+        .join(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
+        .where(JobProcessingStatus.status == JobProcessingStatusEnum.POSTPONED)
+    )
+
+    # Add source filter if specified
+    if source:
+        statement = statement.where(Job.source == source)
+
+    # Add sorting
+    statement = statement.order_by(desc(Job.parsed_at))
+
+    jobs = session.exec(statement).all()
+
+    # Get all unique sources from postponed jobs
+    all_sources_statement = (
+        select(Job.source)
+        .join(JobProcessingStatus, Job.id == JobProcessingStatus.job_id)
+        .where(JobProcessingStatus.status == JobProcessingStatusEnum.POSTPONED)
+        .distinct()
+    )
+    available_sources = [source for source in session.exec(
+        all_sources_statement).all()]
+
+    # Convert Job to PendingJobRead
+    postponed_jobs = [
+        PendingJobRead(
+            id=job.id,
+            title=job.title,
+            url=job.url,
+            source=job.source,
+            description=job.description,
+            company=job.company,
+            company_url=job.company_url,
+            apply_url=job.apply_url,
+            salary=job.salary,
+            parsed_at=job.parsed_at,
+            matching_results=job.matching_results,
+            amocrm_lead_id=job.amocrm_lead_id
+        )
+        for job in jobs
+    ]
+
+    return PendingJobsResponse(
+        jobs=postponed_jobs,
         available_sources=available_sources
     )
 

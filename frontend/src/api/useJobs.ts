@@ -27,13 +27,27 @@ export const usePendingJobs = (source?: string) => {
   });
 };
 
+const fetchPostponedJobs = async (source?: string) => {
+  const { data } = await api.get("/postponed-jobs", {
+    params: source ? { source } : undefined,
+  });
+  return data;
+};
+
+export const usePostponedJobs = (source?: string) => {
+  return useQuery({
+    queryKey: ["postponedJobs", source],
+    queryFn: () => fetchPostponedJobs(source),
+  });
+};
+
 const fetchAcceptOrRejectJob = async (
   id: string,
-  action: "accept" | "reject",
-  comment: string
+  action: "accept" | "reject" | "postpone",
+  comment?: string
 ) => {
   const { data } = await api.post(`/jobs/${id}/${action}`, {
-    comment,
+    comment: comment || null,
   });
   return data;
 };
@@ -47,11 +61,12 @@ export const useAcceptOrRejectJob = () => {
       comment,
     }: {
       id: string;
-      action: "accept" | "reject";
-      comment: string;
+      action: "accept" | "reject" | "postpone";
+      comment?: string;
     }) => fetchAcceptOrRejectJob(id, action, comment),
     onSuccess: () => {
       client.invalidateQueries({ queryKey: ["pendingJobs"] });
+      client.invalidateQueries({ queryKey: ["postponedJobs"] });
     },
   });
 };

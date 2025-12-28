@@ -94,9 +94,9 @@ def get_daily_analytics(db: Session, date: datetime = None) -> str:
         message += "За сегодня подач и отказов нет. 🥲\n"
         return message
 
-    # Group by manager (email)
-    manager_stats: Dict[str, Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]] = defaultdict(
-        lambda: ([], [])  # (applications, rejections)
+    # Group by manager (email): (applications, rejections, postponed)
+    manager_stats: Dict[str, Tuple[List[Tuple[str, str]], List[Tuple[str, str]], List[Tuple[str, str]]]] = defaultdict(
+        lambda: ([], [], [])  # (applications, rejections, postponed)
     )
 
     for status in statuses:
@@ -106,7 +106,6 @@ def get_daily_analytics(db: Session, date: datetime = None) -> str:
             continue
 
         # Get the manager (user) who processed this job
-        # Note: You might need to add a user_id field to JobProcessingStatus if not present
         user = db.get(User, status.user_id) if hasattr(
             status, 'user_id') else None
         manager_email = user.email if user else "Unknown"
@@ -117,8 +116,11 @@ def get_daily_analytics(db: Session, date: datetime = None) -> str:
         elif status.status == "NotSuitable":
             manager_stats[manager_email][1].append(
                 (job.url, status.comment or ""))
+        elif status.status == "Postponed":
+            manager_stats[manager_email][2].append(
+                (job.url, status.comment or ""))
 
-    for manager_email, (applications, rejections) in manager_stats.items():
+    for manager_email, (applications, rejections, postponed) in manager_stats.items():
         message += f"Менеджер {manager_email}\n"
         message += f"Подач - {len(applications)}\n"
 
@@ -128,6 +130,11 @@ def get_daily_analytics(db: Session, date: datetime = None) -> str:
         message += f"\nОтказов - {len(rejections)}\n"
         for url, comment in rejections:
             message += f"- {url} - {comment}\n"
+
+        message += f"\nОтложено - {len(postponed)}\n"
+        for url, comment in postponed:
+            comment_text = f" - {comment}" if comment else ""
+            message += f"- {url}{comment_text}\n"
 
         message += "\n"
 

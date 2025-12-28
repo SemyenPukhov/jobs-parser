@@ -11,6 +11,7 @@ from sqlalchemy import JSON
 class JobProcessingStatusEnum(str, Enum):
     APPLIED = "Applied"
     NOT_SUITABLE = "NotSuitable"
+    POSTPONED = "Postponed"
 
 
 class JobProcessingStatus(SQLModel, table=True):
