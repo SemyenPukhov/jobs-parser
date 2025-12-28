@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     # AI Matching
     OPENROUTER_API_KEY: str | None = os.getenv("OPENROUTER_API_KEY")
-    DEVELOPERS_API_URL: str = os.getenv("DEVELOPERS_API_URL", "http://103.54.16.194/api/resumes/active/all")
+    DEVELOPERS_API_URL: str = os.getenv("DEVELOPERS_API_URL", "http://103.54.16.194/api/resumes/active/freelance")
     MATCHING_THRESHOLD_HIGH: int = int(os.getenv("MATCHING_THRESHOLD_HIGH", "70"))
     MATCHING_THRESHOLD_LOW: int = int(os.getenv("MATCHING_THRESHOLD_LOW", "50"))
 
