@@ -20,7 +20,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # Add new value to PostgreSQL enum type
+    # ALTER TYPE ADD VALUE cannot run inside a transaction
+    # Must commit current transaction first
+    op.execute("COMMIT")
     op.execute("ALTER TYPE jobprocessingstatusenum ADD VALUE IF NOT EXISTS 'Postponed'")
 
 
