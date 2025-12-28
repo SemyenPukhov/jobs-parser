@@ -48,7 +48,7 @@ const REJECT_TEXT = {
 
 const POSTPONE_TEXT = {
   title: "Отложить вакансию",
-  description: "Комментарий (опционально)",
+  description: "Почему откладываем?",
   action: "postpone",
   commentRequired: false,
 };
