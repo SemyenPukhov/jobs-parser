@@ -19,75 +19,51 @@ import asyncio
 scheduler = AsyncIOScheduler()
 
 
+async def run_single_parser(name: str, parser_func, session):
+    """Run a single parser with error handling."""
+    try:
+        logger.info(f"📊 Запускаю {name} парсер")
+        await send_slack_message(f"Запуск парсера {name} 🔨")
+        await parser_func(session)
+        await send_slack_message(f"Парсер {name} завершил работу ✅")
+        return True
+    except Exception as e:
+        error_msg = f"❌ Ошибка в парсере {name}: {str(e)}"
+        logger.error(error_msg)
+        await send_slack_message(error_msg)
+        return False
+
+
 async def run_parsers():
     """Запускает все парсеры последовательно"""
     logger.info("🚀 Начинаю запуск парсеров")
     await send_slack_message("🚀 Начинаю ежедневный запуск парсеров")
 
     session = next(get_session())
-
+    
+    parsers = [
+        ("startup.jobs", scrape_startup_jobs),
+        ("thehub.io", scrape_thehub_jobs),
+        ("vseti.app", scrape_vseti_app_jobs),
+        ("devby.jobs", scrape_devby_jobs),
+        ("justremote.co", scrape_justremote_jobs),
+        ("remoteok.io", scrape_remoteok_jobs),
+    ]
+    
+    success_count = 0
+    fail_count = 0
+    
     try:
-        # Запускаем парсеры последовательно
-        logger.info("📊 Запускаю startup.jobs парсер")
-        await send_slack_message(
-            "Запуск парсера startup.jobs 🔨"
-        )
-        await scrape_startup_jobs(session)
-        await send_slack_message(
-            "Парсер startup.jobs завершил работу ✅",
-        )
-
-        logger.info("📊 Запускаю thehub.io парсер")
-        await send_slack_message(
-            "Запуск парсера thehub.io 🔨",
-        )
-        await scrape_thehub_jobs(session)
-        await send_slack_message(
-            "Парсер thehub.io завершил работу ✅",
-        )
-
-        logger.info("📊 Запускаю vseti.app парсер")
-        await send_slack_message(
-            "Запуск парсера vseti.app 🔨",
-        )
-        await scrape_vseti_app_jobs(session)
-        await send_slack_message(
-            "Парсер vseti.app завершил работу ✅",
-        )
-
-        logger.info("📊 Запускаю devby.jobs парсер")
-        await send_slack_message(
-            "Запуск парсера devby.jobs 🔨"
-        )
-        await scrape_devby_jobs(session)
-        await send_slack_message(
-            "Парсер vseti.app завершил работу ✅"
-        )
-
-        logger.info("📊 Запускаю justremote.co парсер")
-        await send_slack_message(
-            "Запуск парсера justremote.co 🔨"
-        )
-        await scrape_justremote_jobs(session)
-        await send_slack_message(
-            "Парсер justremote.co завершил работу ✅"
-        )
-
-        logger.info("📊 Запускаю remoteok.io парсер")
-        await send_slack_message(
-            "Запуск парсера remoteok.io 🔨"
-        )
-        await scrape_remoteok_jobs(session)
-        await send_slack_message(
-            "Парсер remoteok.io завершил работу ✅"
-        )
-
-        logger.info("✅ Все парсеры успешно завершили работу")
-        await send_slack_message("✅ Все парсеры успешно завершили работу")
-    except Exception as e:
-        error_message = f"❌ Ошибка при запуске парсеров: {str(e)}"
-        logger.error(error_message)
-        await send_slack_message(error_message)
+        for name, parser_func in parsers:
+            result = await run_single_parser(name, parser_func, session)
+            if result:
+                success_count += 1
+            else:
+                fail_count += 1
+        
+        summary = f"✅ Парсеры завершили работу. Успешно: {success_count}, ошибок: {fail_count}"
+        logger.info(summary)
+        await send_slack_message(summary)
     finally:
         session.close()
 
