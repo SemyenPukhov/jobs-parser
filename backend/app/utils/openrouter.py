@@ -107,11 +107,12 @@ SCORING SCALE:
 RESPOND ONLY in this JSON format without any extra text:
 {{
   "matches": [
-    {{"developer_id": "developer ID", "score": number 0-100, "reasoning": "brief technical explanation focusing on PRIMARY tech match"}},
+    {{"developer_id": "developer ID", "score": number 0-100, "reasoning": "краткое техническое обоснование на РУССКОМ языке"}},
     ...
   ]
 }}
 
+ВАЖНО: Поле "reasoning" ОБЯЗАТЕЛЬНО должно быть на РУССКОМ языке!
 Include ALL developers in response, even with low scores."""
 
     headers = {
