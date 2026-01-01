@@ -70,6 +70,9 @@ jobs:
             MATCHING_THRESHOLD_HIGH=70
             MATCHING_THRESHOLD_LOW=50
             ENVIRONMENT=prod
+            AMOCRM_TOKEN=${{ secrets.AMOCRM_TOKEN }}
+            AMOCRM_BASE_URL=${{ secrets.AMOCRM_BASE_URL }}
+            AMOCRM_PIPELINE_ID=${{ secrets.AMOCRM_PIPELINE_ID }}
             EOL
 
             # Запуск сервисов
