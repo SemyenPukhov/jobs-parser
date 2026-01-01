@@ -7,6 +7,7 @@ from app.parsers.vseti_app import scrape_vseti_app_jobs
 from app.parsers.dev_by import scrape_devby_jobs
 from app.parsers.justremote_co import scrape_justremote_jobs
 from app.parsers.remoteok import scrape_remoteok_jobs
+from app.parsers.himalayas_app import scrape_himalayas_jobs
 
 
 from app.db import get_session
@@ -48,6 +49,7 @@ async def run_parsers():
         ("devby.jobs", scrape_devby_jobs),
         ("justremote.co", scrape_justremote_jobs),
         ("remoteok.io", scrape_remoteok_jobs),
+        ("himalayas.app", scrape_himalayas_jobs),
     ]
     
     success_count = 0
