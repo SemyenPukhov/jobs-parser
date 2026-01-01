@@ -66,7 +66,8 @@ export default function HomePage() {
 
   // Reset visible count when source changes
   const handleSourceChange = (newSource: string) => {
-    setSource(newSource);
+    // "all" is used as reset value
+    setSource(newSource === "all" ? "" : newSource);
     setVisiblePending(ITEMS_PER_PAGE);
     setVisiblePostponed(ITEMS_PER_PAGE);
   };
@@ -305,11 +306,12 @@ export default function HomePage() {
       <div className="flex flex-col p-[16px] pt-0">
         <div className="flex items-center h-[48px] mb-4">
           <div className="ml-auto">
-            <Select onValueChange={handleSourceChange}>
+            <Select value={source || "all"} onValueChange={handleSourceChange}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Ресурс" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">Все ресурсы</SelectItem>
                 {sources.map((s: string) => {
                   return (
                     <SelectItem key={s} value={s}>
