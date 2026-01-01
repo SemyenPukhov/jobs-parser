@@ -259,6 +259,7 @@ async def run_matching(session: Session) -> Dict[str, List[Dict[str, Any]]]:
 async def send_matching_results(results: Dict[str, List[Dict[str, Any]]], session: Session):
     """
     Format and send matching results to Slack.
+    Only sends excellent matches (score >= MATCHING_THRESHOLD_HIGH).
     
     Args:
         results: Dictionary with job_id -> list of matching developers
@@ -278,42 +279,26 @@ async def send_matching_results(results: Dict[str, List[Dict[str, Any]]], sessio
                 logger.error(f"❌ Вакансия {job_id_str} не найдена в БД")
                 continue
             
-            # Separate matches by score threshold
+            # Only excellent matches
             excellent_matches = [m for m in matches if m["score"] >= settings.MATCHING_THRESHOLD_HIGH]
-            good_matches = [m for m in matches if settings.MATCHING_THRESHOLD_LOW <= m["score"] < settings.MATCHING_THRESHOLD_HIGH]
             
-            # Build message
-            message = f"""🎯 *Найдены подходящие кандидаты!*
+            # Skip if no excellent matches
+            if not excellent_matches:
+                logger.info(f"ℹ️ Нет отличных совпадений для вакансии: {job.title}")
+                continue
+            
+            # Build candidates list
+            candidates_list = ", ".join(
+                f"{m['developer'].get('name', 'N/A')} ({m['score']})"
+                for m in excellent_matches
+            )
+            
+            # Build compact message
+            message = f"""🎯 *{job.title}* @ {job.company or 'N/A'}
+🔗 {job.url}
+✅ *Кандидаты:* {candidates_list}
 
-📋 *Вакансия:* {job.title}
-🏢 *Компания:* {job.company or 'Не указана'}
-🌐 *Источник:* {job.source}
-🔗 *Ссылка:* {job.url}
-"""
-            
-            if excellent_matches:
-                message += f"\n✅ *Отлично подходят ({settings.MATCHING_THRESHOLD_HIGH}+):*\n"
-                for match in excellent_matches:
-                    dev = match["developer"]
-                    name = dev.get('name', 'Не указано')
-                    score = match["score"]
-                    reasoning = match["reasoning"]
-                    
-                    message += f"\n• *{name}* (оценка: {score}/100)\n"
-                    message += f"  _Обоснование:_ {reasoning}\n"
-            
-            if good_matches:
-                message += f"\n⚠️ *Возможно подходят ({settings.MATCHING_THRESHOLD_LOW}-{settings.MATCHING_THRESHOLD_HIGH-1}):*\n"
-                for match in good_matches:
-                    dev = match["developer"]
-                    name = dev.get('name', 'Не указано')
-                    score = match["score"]
-                    reasoning = match["reasoning"]
-                    
-                    message += f"\n• *{name}* (оценка: {score}/100)\n"
-                    message += f"  _Обоснование:_ {reasoning}\n"
-            
-            message += f"\n👤 {manager_mention}, прошу рассмотреть кандидатов"
+👤 {manager_mention}"""
             
             # Send to Slack
             await send_slack_message(message)
