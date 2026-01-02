@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     AMOCRM_TOKEN: str | None = os.getenv("AMOCRM_TOKEN")
     AMOCRM_BASE_URL: str = os.getenv("AMOCRM_BASE_URL", "https://fortech.amocrm.ru")
     AMOCRM_PIPELINE_ID: int = int(os.getenv("AMOCRM_PIPELINE_ID", "10355510"))
+
+    # RapidAPI Y Combinator jobs
+    RAPID_YCOMB_API_KEY: str | None = os.getenv("RAPID_YCOMB_API_KEY")
     # JWT
     # JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key")
     # JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
