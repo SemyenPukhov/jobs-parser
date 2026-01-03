@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     # AI Matching
     OPENROUTER_API_KEY: str | None = os.getenv("OPENROUTER_API_KEY")
     DEVELOPERS_API_URL: str = os.getenv("DEVELOPERS_API_URL", "http://103.54.16.194/api/resumes/active/freelance")
-    MATCHING_THRESHOLD_HIGH: int = int(os.getenv("MATCHING_THRESHOLD_HIGH", "70"))
-    MATCHING_THRESHOLD_LOW: int = int(os.getenv("MATCHING_THRESHOLD_LOW", "50"))
+    MATCHING_THRESHOLD_HIGH: int = int(os.getenv("MATCHING_THRESHOLD_HIGH") or "70")
+    MATCHING_THRESHOLD_LOW: int = int(os.getenv("MATCHING_THRESHOLD_LOW") or "50")
 
     # PROXY
     PROXY_USER: str | None = os.getenv("PROXY_USER")
@@ -40,8 +40,8 @@ class Settings(BaseSettings):
 
     # AmoCRM
     AMOCRM_TOKEN: str | None = os.getenv("AMOCRM_TOKEN")
-    AMOCRM_BASE_URL: str = os.getenv("AMOCRM_BASE_URL", "https://fortech.amocrm.ru")
-    AMOCRM_PIPELINE_ID: int = int(os.getenv("AMOCRM_PIPELINE_ID", "10355510"))
+    AMOCRM_BASE_URL: str = os.getenv("AMOCRM_BASE_URL") or "https://fortech.amocrm.ru"
+    AMOCRM_PIPELINE_ID: int = int(os.getenv("AMOCRM_PIPELINE_ID") or "10355510")
 
     # RapidAPI Y Combinator jobs
     RAPID_YCOMB_API_KEY: str | None = os.getenv("RAPID_YCOMB_API_KEY")
