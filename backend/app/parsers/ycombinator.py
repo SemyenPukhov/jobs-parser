@@ -62,16 +62,22 @@ def is_dev_job(title: str, description: str = "") -> bool:
     return False
 
 
-def parse_salary(salary_raw: Optional[str]) -> Optional[str]:
+def parse_salary(salary_raw) -> Optional[str]:
     """
-    Parse salary information from raw JSON string.
-    Example: '{"@type":"MonetaryAmount","currency":"USD","value":{"@type":"QuantitativeValue","minValue":72000,"maxValue":77000,"unitText":"YEAR"}}'
+    Parse salary information from raw data (can be dict or string).
     """
     if not salary_raw:
         return None
     
     try:
-        salary_data = json.loads(salary_raw)
+        # Handle both dict and string formats
+        if isinstance(salary_raw, str):
+            salary_data = json.loads(salary_raw)
+        elif isinstance(salary_raw, dict):
+            salary_data = salary_raw
+        else:
+            return None
+        
         value = salary_data.get("value", {})
         currency = salary_data.get("currency", "USD")
         min_val = value.get("minValue")
@@ -84,7 +90,7 @@ def parse_salary(salary_raw: Optional[str]) -> Optional[str]:
             return f"{currency} {min_val:,}+ / {unit}"
         elif max_val:
             return f"Up to {currency} {max_val:,} / {unit}"
-    except (json.JSONDecodeError, TypeError, KeyError):
+    except Exception:
         pass
     
     return None
@@ -109,25 +115,37 @@ async def fetch_jobs_from_api() -> List[Dict[str, Any]]:
         logger.error("❌ RAPID_YCOMB_API_KEY не настроен")
         return []
     
+    logger.info(f"📡 Запрос к API: {API_URL}")
+    
     headers = {
         "x-rapidapi-key": settings.RAPID_YCOMB_API_KEY,
         "x-rapidapi-host": API_HOST,
     }
     
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.get(API_URL, headers=headers)
+            
+            logger.info(f"📡 Ответ API: status={response.status_code}")
             
             if response.status_code == 200:
                 data = response.json()
                 if isinstance(data, list):
                     logger.info(f"📊 Получено {len(data)} вакансий из Y Combinator API")
                     return data
+                elif isinstance(data, dict):
+                    # Some APIs wrap results in a dict
+                    jobs = data.get("jobs", data.get("data", data.get("results", [])))
+                    if isinstance(jobs, list):
+                        logger.info(f"📊 Получено {len(jobs)} вакансий из Y Combinator API (из dict)")
+                        return jobs
+                    logger.warning(f"⚠️ Неожиданный формат ответа от API: dict без списка вакансий")
+                    return []
                 else:
                     logger.warning(f"⚠️ Неожиданный формат ответа от API: {type(data)}")
                     return []
             else:
-                logger.error(f"❌ Ошибка API: {response.status_code} - {response.text[:200]}")
+                logger.error(f"❌ Ошибка API: {response.status_code} - {response.text[:500]}")
                 return []
                 
     except Exception as e:
