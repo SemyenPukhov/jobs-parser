@@ -73,6 +73,7 @@ jobs:
             AMOCRM_TOKEN=${{ secrets.AMOCRM_TOKEN }}
             AMOCRM_BASE_URL=${{ secrets.AMOCRM_BASE_URL }}
             AMOCRM_PIPELINE_ID=${{ secrets.AMOCRM_PIPELINE_ID }}
+            RAPID_YCOMB_API_KEY=${{ secrets.RAPID_YCOMB_API_KEY }}
             EOL
 
             # Запуск сервисов
