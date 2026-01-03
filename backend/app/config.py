@@ -45,6 +45,9 @@ class Settings(BaseSettings):
 
     # RapidAPI Y Combinator jobs
     RAPID_YCOMB_API_KEY: str | None = os.getenv("RAPID_YCOMB_API_KEY")
+    
+    # RapidAPI Active Jobs DB
+    RAPID_ACTIVEJOBS_API_KEY: str | None = os.getenv("RAPID_ACTIVEJOBS_API_KEY")
     # JWT
     # JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key")
     # JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")

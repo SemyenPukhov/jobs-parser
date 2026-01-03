@@ -7,6 +7,7 @@ from app.parsers.justremote_co import scrape_justremote_jobs
 from app.parsers.remoteok import scrape_remoteok_jobs
 from app.parsers.himalayas_app import scrape_himalayas_jobs
 from app.parsers.ycombinator import scrape_ycombinator_jobs
+from app.parsers.activejobs_db import scrape_activejobs_db
 
 from app.utils.slack import send_slack_message
 
@@ -133,6 +134,16 @@ async def run_ycombinator_scraper(
 ):
     background_tasks.add_task(scrape_ycombinator_jobs, session)
     return {"message": "Y Combinator scraping started in background"}
+
+
+@router.post("/scrape/activejobs-db")
+async def run_activejobs_db_scraper(
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
+    # current_user: User = Depends(get_current_user)
+):
+    background_tasks.add_task(scrape_activejobs_db, session)
+    return {"message": "Active Jobs DB scraping started in background"}
 
 
 @router.post("/jobs/{job_id}/accept")

@@ -9,6 +9,7 @@ from app.parsers.justremote_co import scrape_justremote_jobs
 from app.parsers.remoteok import scrape_remoteok_jobs
 from app.parsers.himalayas_app import scrape_himalayas_jobs
 from app.parsers.ycombinator import scrape_ycombinator_jobs
+from app.parsers.activejobs_db import scrape_activejobs_db
 
 
 from app.db import get_session
@@ -52,6 +53,7 @@ async def run_parsers():
         ("remoteok.io", scrape_remoteok_jobs),
         ("himalayas.app", scrape_himalayas_jobs),
         ("ycombinator", scrape_ycombinator_jobs),
+        ("activejobs_db", scrape_activejobs_db),
     ]
     
     success_count = 0
