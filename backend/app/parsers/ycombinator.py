@@ -16,13 +16,9 @@ from app.config import settings
 
 
 # API configuration
-API_URL = "https://active-jobs-db.p.rapidapi.com/active-ats-7d"
-API_HOST = "active-jobs-db.p.rapidapi.com"
+API_URL = "https://free-y-combinator-jobs-api.p.rapidapi.com/active-jb-7d"
+API_HOST = "free-y-combinator-jobs-api.p.rapidapi.com"
 SOURCE = "ycombinator"
-
-# Pagination settings
-PAGE_LIMIT = 50
-MAX_PAGES = 3
 
 # Keywords that indicate software development positions
 DEV_KEYWORDS = {
@@ -104,13 +100,13 @@ def format_location(job_data: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-async def fetch_jobs_from_api(limit: int = PAGE_LIMIT, offset: int = 0) -> List[Dict[str, Any]]:
+async def fetch_jobs_from_api() -> List[Dict[str, Any]]:
     """
-    Fetch jobs from RapidAPI active-jobs-db.
+    Fetch jobs from RapidAPI Y Combinator jobs API.
     Returns list of job dictionaries.
     """
     if not settings.RAPID_YCOMB_API_KEY:
-        logger.error("❌ RAPID_YCOMB_API_KEY not configured")
+        logger.error("❌ RAPID_YCOMB_API_KEY не настроен")
         return []
     
     headers = {
@@ -118,55 +114,35 @@ async def fetch_jobs_from_api(limit: int = PAGE_LIMIT, offset: int = 0) -> List[
         "x-rapidapi-host": API_HOST,
     }
     
-    params = {
-        "limit": limit,
-        "offset": offset,
-    }
-    
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(API_URL, headers=headers, params=params)
+            response = await client.get(API_URL, headers=headers)
             
             if response.status_code == 200:
                 data = response.json()
                 if isinstance(data, list):
-                    logger.info(f"📊 Получено {len(data)} вакансий (offset={offset})")
+                    logger.info(f"📊 Получено {len(data)} вакансий из Y Combinator API")
                     return data
                 else:
-                    logger.warning(f"⚠️ Unexpected response format from API")
+                    logger.warning(f"⚠️ Неожиданный формат ответа от API: {type(data)}")
                     return []
             else:
-                logger.error(f"❌ API error: {response.status_code} - {response.text[:200]}")
+                logger.error(f"❌ Ошибка API: {response.status_code} - {response.text[:200]}")
                 return []
                 
     except Exception as e:
-        logger.error(f"❌ Error fetching from API: {str(e)}")
+        logger.error(f"❌ Ошибка при запросе к API: {str(e)}")
         return []
 
 
-async def fetch_all_jobs_with_pagination() -> List[Dict[str, Any]]:
+async def fetch_all_jobs() -> List[Dict[str, Any]]:
     """
-    Fetch all jobs using pagination.
-    Returns combined list of jobs from all pages.
+    Fetch all jobs from Y Combinator API.
+    Returns list of jobs.
     """
-    all_jobs = []
-    
-    for page in range(MAX_PAGES):
-        offset = page * PAGE_LIMIT
-        jobs = await fetch_jobs_from_api(limit=PAGE_LIMIT, offset=offset)
-        
-        if not jobs:
-            logger.info(f"📋 No more jobs at offset {offset}, stopping pagination")
-            break
-        
-        all_jobs.extend(jobs)
-        
-        # If we got fewer jobs than limit, there are no more pages
-        if len(jobs) < PAGE_LIMIT:
-            break
-    
-    logger.info(f"📊 Total jobs fetched: {len(all_jobs)}")
-    return all_jobs
+    jobs = await fetch_jobs_from_api()
+    logger.info(f"📊 Всего получено вакансий: {len(jobs)}")
+    return jobs
 
 
 def map_job_to_model(job_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -220,13 +196,13 @@ async def scrape_ycombinator_jobs(session: Session) -> List[Job]:
     }
     
     try:
-        # Fetch all jobs with pagination
-        jobs_data = await fetch_all_jobs_with_pagination()
+        # Fetch all jobs from API
+        jobs_data = await fetch_all_jobs()
         stats["total_fetched"] = len(jobs_data)
         
         if not jobs_data:
-            logger.warning("⚠️ No jobs received from Y Combinator API")
-            await send_slack_message(f"⚠️ Y Combinator: no jobs received from API")
+            logger.warning("⚠️ Не получено вакансий из Y Combinator API")
+            await send_slack_message(f"⚠️ {SOURCE}: не получено вакансий из API")
             return []
         
         # Filter and process jobs
@@ -245,7 +221,7 @@ async def scrape_ycombinator_jobs(session: Session) -> List[Job]:
             
             # Skip if no URL
             if not job_info["url"]:
-                logger.warning(f"⚠️ Skipped job without URL: {job_info['title']}")
+                logger.warning(f"⚠️ Пропущена вакансия без URL: {job_info['title']}")
                 continue
             
             # Check for duplicates
@@ -255,7 +231,7 @@ async def scrape_ycombinator_jobs(session: Session) -> List[Job]:
             
             if existing:
                 stats["duplicates_skipped"] += 1
-                logger.debug(f"⏭️ Skipped duplicate: {job_info['title']}")
+                logger.debug(f"⏭️ Пропущен дубликат: {job_info['title']}")
                 continue
             
             # Create and save job
@@ -273,7 +249,7 @@ async def scrape_ycombinator_jobs(session: Session) -> List[Job]:
             session.add(job)
             all_jobs.append(job)
             stats["added_to_db"] += 1
-            logger.info(f"✅ Saved: {job_info['title']} @ {job_info['company']}")
+            logger.info(f"✅ Сохранено: {job_info['title']} @ {job_info['company']}")
         
         # Commit all jobs
         session.commit()
@@ -283,23 +259,21 @@ async def scrape_ycombinator_jobs(session: Session) -> List[Job]:
         
         # Send Slack report
         report = (
-            f"📊 *Parsing summary* {SOURCE}:\n"
-            f"Total fetched from API: {stats['total_fetched']}\n"
-            f"Dev jobs found: {stats['dev_jobs_found']}\n"
-            f"Filtered out (not dev): {stats['filtered_out']}\n"
-            f"Added to DB: {stats['added_to_db']}\n"
-            f"Duplicates skipped: {stats['duplicates_skipped']}\n"
-            f"Execution time: {duration:.2f} sec"
+            f"📊 *Сводка по парсингу {SOURCE}*:\n"
+            f"Всего найдено вакансий: {stats['dev_jobs_found']}\n"
+            f"Добавлено в БД: {stats['added_to_db']}\n"
+            f"Пропущено дубликатов: {stats['duplicates_skipped']}\n"
+            f"Время выполнения: {duration:.2f} секунд"
         )
         await send_slack_message(report)
         
-        logger.info(f"✅ Y Combinator parsing completed. Added {stats['added_to_db']} jobs")
+        logger.info(f"✅ Парсинг {SOURCE} завершен. Добавлено {stats['added_to_db']} вакансий")
         
         return all_jobs
         
     except Exception as e:
-        error_message = f"❌ Critical error parsing Y Combinator: {str(e)}"
+        error_message = f"❌ Критическая ошибка при парсинге {SOURCE}: {str(e)}"
         logger.error(error_message)
-        await send_slack_message(f"❌ Error parsing {SOURCE}:\n{str(e)}")
+        await send_slack_message(f"❌ Ошибка при парсинге {SOURCE}:\n{str(e)}")
         return []
 

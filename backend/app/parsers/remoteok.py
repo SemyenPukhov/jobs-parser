@@ -226,13 +226,11 @@ async def scrape_remoteok_jobs(session: Session) -> List[Job]:
         
         # Send Slack report
         report = (
-            f"📊 *Сводка по парсингу* {SOURCE}:\n"
-            f"Всего получено из API: {stats['total_fetched']}\n"
-            f"Dev-вакансий найдено: {stats['dev_jobs_found']}\n"
-            f"Отфильтровано (не dev): {stats['filtered_out']}\n"
+            f"📊 *Сводка по парсингу {SOURCE}*:\n"
+            f"Всего найдено вакансий: {stats['dev_jobs_found']}\n"
             f"Добавлено в БД: {stats['added_to_db']}\n"
             f"Пропущено дубликатов: {stats['duplicates_skipped']}\n"
-            f"Время выполнения: {duration:.2f} сек"
+            f"Время выполнения: {duration:.2f} секунд"
         )
         await send_slack_message(report)
         

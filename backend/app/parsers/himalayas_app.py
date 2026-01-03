@@ -373,15 +373,11 @@ async def scrape_himalayas_jobs(session: Session) -> List[Job]:
         
         # Send Slack report
         report = (
-            f"📊 *Parsing summary* {SOURCE}:\n"
-            f"Total fetched from API: {stats['total_fetched']}\n"
-            f"Filtered by experience (not mid/senior): {stats['experience_filtered']}\n"
-            f"Filtered by employment (not full-time/contractor): {stats['employment_filtered']}\n"
-            f"Filtered (non-dev): {stats['non_dev_filtered']}\n"
-            f"Dev jobs found: {stats['dev_jobs_found']}\n"
-            f"Added to DB: {stats['added_to_db']}\n"
-            f"Duplicates skipped: {stats['duplicates_skipped']}\n"
-            f"Execution time: {duration:.2f} sec"
+            f"📊 *Сводка по парсингу {SOURCE}*:\n"
+            f"Всего найдено вакансий: {stats['dev_jobs_found']}\n"
+            f"Добавлено в БД: {stats['added_to_db']}\n"
+            f"Пропущено дубликатов: {stats['duplicates_skipped']}\n"
+            f"Время выполнения: {duration:.2f} секунд"
         )
         await send_slack_message(report)
         
