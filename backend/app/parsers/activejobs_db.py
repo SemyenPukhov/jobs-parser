@@ -22,7 +22,7 @@ SOURCE = "activejobs_db"
 
 # API query parameters
 LIMIT = 10  # Free plan limit
-TITLE_FILTER = '"developer" OR "engineer" OR "programmer" OR "software"'
+TITLE_FILTER = '"developer" OR "software"'
 
 
 def get_yesterday_date() -> str:
