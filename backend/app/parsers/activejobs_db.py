@@ -16,13 +16,13 @@ from app.config import settings
 
 
 # API configuration
-API_URL = "https://active-jobs-db.p.rapidapi.com/jobs-24h"
+API_URL = "https://active-jobs-db.p.rapidapi.com/active-ats-7d"
 API_HOST = "active-jobs-db.p.rapidapi.com"
 SOURCE = "activejobs_db"
 
 # API query parameters
 LIMIT = 10  # Free plan limit
-TITLE_FILTER = "developer OR engineer OR programmer OR software"
+TITLE_FILTER = '"developer" OR "engineer" OR "programmer" OR "software"'
 
 
 def get_yesterday_date() -> str:
@@ -85,7 +85,7 @@ def format_location(job_data: Dict[str, Any]) -> Optional[str]:
 async def fetch_jobs_from_api() -> List[Dict[str, Any]]:
     """
     Fetch jobs from RapidAPI Active Jobs DB with filtering.
-    Uses date_filter, title_filter, remote and limit parameters.
+    Uses date_filter, title_filter and limit parameters.
     Returns list of job dictionaries.
     """
     if not settings.RAPID_ACTIVEJOBS_API_KEY:
@@ -95,14 +95,15 @@ async def fetch_jobs_from_api() -> List[Dict[str, Any]]:
     yesterday = get_yesterday_date()
     
     params = {
-        "remote": "true",
         "limit": LIMIT,
+        "offset": 0,
         "date_filter": yesterday,
         "title_filter": TITLE_FILTER,
+        "description_type": "text",
     }
     
     logger.info(f"📡 API request: {API_URL}")
-    logger.info(f"📡 Parameters: remote=true, limit={LIMIT}, date_filter={yesterday}, title_filter={TITLE_FILTER}")
+    logger.info(f"📡 Parameters: limit={LIMIT}, date_filter={yesterday}, title_filter={TITLE_FILTER}")
     
     headers = {
         "x-rapidapi-key": settings.RAPID_ACTIVEJOBS_API_KEY,
