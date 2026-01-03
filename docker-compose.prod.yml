@@ -73,22 +73,35 @@ services:
       migrate:
         condition: service_completed_successfully
     environment:
+      # Database
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
       DB_HOST: db
       DB_PORT: 5432
+      # Slack
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
       SLACK_CHANNEL_ID: ${SLACK_CHANNEL_ID}
+      SLACK_MANAGER_ID: ${SLACK_MANAGER_ID}
+      # Parsers auth
       JUST_REMOTE_LOGIN: ${JUST_REMOTE_LOGIN}
       JUST_REMOTE_PWD: ${JUST_REMOTE_PWD}
+      RAPID_YCOMB_API_KEY: ${RAPID_YCOMB_API_KEY}
+      # Proxy
       PROXY_USER: ${PROXY_USER}
       PROXY_PASS: ${PROXY_PASS}
       PROXY_HOST: ${PROXY_HOST}
-      ENVIRONMENT: ${ENVIRONMENT}
+      # AI Matching
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-      RAPID_YCOMB_API_KEY: ${RAPID_YCOMB_API_KEY}
-
+      DEVELOPERS_API_URL: ${DEVELOPERS_API_URL}
+      MATCHING_THRESHOLD_HIGH: ${MATCHING_THRESHOLD_HIGH}
+      MATCHING_THRESHOLD_LOW: ${MATCHING_THRESHOLD_LOW}
+      # AmoCRM
+      AMOCRM_TOKEN: ${AMOCRM_TOKEN}
+      AMOCRM_BASE_URL: ${AMOCRM_BASE_URL}
+      AMOCRM_PIPELINE_ID: ${AMOCRM_PIPELINE_ID}
+      # Environment
+      ENVIRONMENT: ${ENVIRONMENT}
     networks:
       - app-network
     deploy:
