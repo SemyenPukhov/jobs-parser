@@ -1,68 +1,75 @@
 import os
 from dotenv import load_dotenv
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 from functools import lru_cache
+from typing import Optional
 
 # Загружаем переменные окружения из .env файла
 load_dotenv()
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(case_sensitive=True)
+    
     # Environment
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "dev")
+    ENVIRONMENT: str = "dev"
 
     # Database
-    DB_USER: str = os.getenv("DB_USER", "postgres")
-    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "postgres")
-    DB_NAME: str = os.getenv("DB_NAME", "jobs_parser")
-    DB_HOST: str = os.getenv("DB_HOST", "db")
-    DB_PORT: str = os.getenv("DB_PORT", "5432")
+    DB_USER: str = "postgres"
+    DB_PASSWORD: str = "postgres"
+    DB_NAME: str = "jobs_parser"
+    DB_HOST: str = "db"
+    DB_PORT: str = "5432"
 
     # Slack
-    SLACK_BOT_TOKEN: str | None = os.getenv("SLACK_BOT_TOKEN")
-    SLACK_CHANNEL_ID: str | None = os.getenv("SLACK_CHANNEL_ID")
-    SLACK_MANAGER_ID: str | None = os.getenv("SLACK_MANAGER_ID")
+    SLACK_BOT_TOKEN: Optional[str] = None
+    SLACK_CHANNEL_ID: Optional[str] = None
+    SLACK_MANAGER_ID: Optional[str] = None
 
     # AI Matching
-    OPENROUTER_API_KEY: str | None = os.getenv("OPENROUTER_API_KEY")
-    DEVELOPERS_API_URL: str = os.getenv("DEVELOPERS_API_URL", "http://103.54.16.194/api/resumes/active/freelance")
-    MATCHING_THRESHOLD_HIGH: int = int(os.getenv("MATCHING_THRESHOLD_HIGH") or "70")
-    MATCHING_THRESHOLD_LOW: int = int(os.getenv("MATCHING_THRESHOLD_LOW") or "50")
+    OPENROUTER_API_KEY: Optional[str] = None
+    DEVELOPERS_API_URL: str = "http://103.54.16.194/api/resumes/active/freelance"
+    MATCHING_THRESHOLD_HIGH: int = 70
+    MATCHING_THRESHOLD_LOW: int = 50
 
     # PROXY
-    PROXY_USER: str | None = os.getenv("PROXY_USER")
-    PROXY_PASS: str | None = os.getenv("PROXY_PASS")
-    PROXY_HOST: str | None = os.getenv("PROXY_HOST")
+    PROXY_USER: Optional[str] = None
+    PROXY_PASS: Optional[str] = None
+    PROXY_HOST: Optional[str] = None
 
     # just remote
-    JUST_REMOTE_LOGIN: str = os.getenv("JUST_REMOTE_LOGIN")
-    JUST_REMOTE_PWD: str = os.getenv("JUST_REMOTE_PWD")
+    JUST_REMOTE_LOGIN: Optional[str] = None
+    JUST_REMOTE_PWD: Optional[str] = None
 
     # AmoCRM
-    AMOCRM_TOKEN: str | None = os.getenv("AMOCRM_TOKEN")
-    AMOCRM_BASE_URL: str = os.getenv("AMOCRM_BASE_URL") or "https://fortech.amocrm.ru"
-    AMOCRM_PIPELINE_ID: int = int(os.getenv("AMOCRM_PIPELINE_ID") or "10355510")
+    AMOCRM_TOKEN: Optional[str] = None
+    AMOCRM_BASE_URL: str = "https://fortech.amocrm.ru"
+    AMOCRM_PIPELINE_ID: int = 10355510
 
     # RapidAPI Y Combinator jobs
-    RAPID_YCOMB_API_KEY: str | None = os.getenv("RAPID_YCOMB_API_KEY")
+    RAPID_YCOMB_API_KEY: Optional[str] = None
     
     # RapidAPI Active Jobs DB
-    RAPID_ACTIVEJOBS_API_KEY: str | None = os.getenv("RAPID_ACTIVEJOBS_API_KEY")
-    # JWT
-    # JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key")
-    # JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
-    # ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
-    #     os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "2400"))
+    RAPID_ACTIVEJOBS_API_KEY: Optional[str] = None
 
     # API
     API_V1_PREFIX: str = "/api"
 
     # CORS
-    # CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8000"]
     CORS_ORIGINS: list[str] = ["*"]
 
-    class Config:
-        case_sensitive = True
+    @field_validator('AMOCRM_PIPELINE_ID', 'MATCHING_THRESHOLD_HIGH', 'MATCHING_THRESHOLD_LOW', mode='before')
+    @classmethod
+    def parse_int_or_default(cls, v, info):
+        if v is None or v == '':
+            defaults = {
+                'AMOCRM_PIPELINE_ID': 10355510,
+                'MATCHING_THRESHOLD_HIGH': 70,
+                'MATCHING_THRESHOLD_LOW': 50,
+            }
+            return defaults.get(info.field_name, 0)
+        return int(v)
 
 
 @lru_cache()
